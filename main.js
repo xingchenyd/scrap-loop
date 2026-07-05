@@ -1,0 +1,3398 @@
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const titleScreen = document.getElementById("titleScreen");
+const modal = document.getElementById("modal");
+const toastEl = document.getElementById("toast");
+const hpText = document.getElementById("hpText");
+const hpFill = document.getElementById("hpFill");
+const shieldText = document.getElementById("shieldText");
+const shieldFill = document.getElementById("shieldFill");
+const pointText = document.getElementById("pointText");
+const printText = document.getElementById("printText");
+const scrapRow = document.getElementById("scrapRow");
+
+const W = canvas.width;
+const H = canvas.height;
+const GAME_NAME = "废品轮回 Scrap Loop";
+const SAVE_KEY = "scrap-loop-save-v3";
+const OLD_SAVE_KEYS = ["green-loop-quest-save-v2", "green-loop-quest-save-v1"];
+ctx.imageSmoothingEnabled = false;
+
+const imagePaths = {
+  bgHub: "assets/generated/hub.png",
+  bgArena: "assets/generated/arena.png",
+  bgLab: "assets/generated/lab.png",
+  bgMarket: "assets/generated/market.png",
+  bossCat: "assets/sprites/boss_cat.png",
+  heroFront: "assets/sprites/hero_idle_front.png",
+  heroBack: "assets/sprites/hero_idle_back.png",
+  heroWalkFront1: "assets/sprites/hero_walk_front_1.png",
+  heroWalkFront2: "assets/sprites/hero_walk_front_2.png",
+  heroWalkBack1: "assets/sprites/hero_walk_back_1.png",
+  heroWalkBack2: "assets/sprites/hero_walk_back_2.png",
+  heroWalkRight1: "assets/sprites/hero_walk_right_1.png",
+  heroWalkRight2: "assets/sprites/hero_walk_right_2.png",
+  portal0: "assets/sprites/portal_frame_0.png",
+  portal1: "assets/sprites/portal_frame_1.png",
+  portal2: "assets/sprites/portal_frame_2.png",
+  portal3: "assets/sprites/portal_frame_3.png",
+  portal4: "assets/sprites/portal_frame_4.png",
+  portal5: "assets/sprites/portal_frame_5.png",
+  portal6: "assets/sprites/portal_frame_6.png",
+  portal7: "assets/sprites/portal_frame_7.png",
+  facilityWorkbench: "assets/sprites/facility_workbench.png",
+  facilityPortal: "assets/sprites/facility_portal.png",
+  facilityLocker: "assets/sprites/facility_locker.png",
+  facilityMedbay: "assets/sprites/facility_medbay.png",
+  facilityRecycler: "assets/sprites/facility_recycler.png",
+  facilityBoard: "assets/sprites/facility_board.png",
+  facilityExchange: "assets/sprites/facility_exchange.png",
+  facilityTerminal: "assets/sprites/facility_terminal.png",
+  facilityPrinter: "assets/sprites/facility_printer.png",
+  facilityShelf: "assets/sprites/facility_shelf.png",
+  enemyBinbot: "assets/sprites/enemy_binbot.png",
+  enemySludge: "assets/sprites/enemy_sludge.png",
+  enemyEye: "assets/sprites/enemy_eye.png",
+  enemyMimic: "assets/sprites/enemy_mimic.png",
+  enemyGuard: "assets/sprites/enemy_guard.png",
+  trapSpikes: "assets/sprites/trap_spikes.png",
+  trapSaw: "assets/sprites/trap_saw.png",
+  trapVent: "assets/sprites/trap_vent.png",
+  itemPlastic: "assets/sprites/item_plastic.png",
+  itemGlass: "assets/sprites/item_glass.png",
+  itemCircuit: "assets/sprites/item_circuit.png",
+  itemCoil: "assets/sprites/item_coil.png",
+  itemGear: "assets/sprites/item_gear.png",
+  itemMetal: "assets/sprites/item_metal.png",
+  itemToken: "assets/sprites/item_token.png",
+  itemBattery: "assets/sprites/item_battery.png",
+  itemHeart: "assets/sprites/item_heart.png",
+  itemShield: "assets/sprites/item_shield.png",
+  itemSpeed: "assets/sprites/item_speed.png",
+  itemMagnet: "assets/sprites/item_magnet.png",
+  itemPower: "assets/sprites/item_power.png",
+  itemCooldown: "assets/sprites/item_cooldown.png",
+  equipWrenchBasic: "assets/sprites/equip_wrench_basic.png",
+  equipWrenchGreen: "assets/sprites/equip_wrench_green.png",
+  equipWrenchBlue: "assets/sprites/equip_wrench_blue.png",
+  equipWrenchGold: "assets/sprites/equip_wrench_gold.png",
+  equipHelmetBasic: "assets/sprites/equip_helmet_basic.png",
+  equipHelmetBlue: "assets/sprites/equip_helmet_blue.png",
+  equipArmorBasic: "assets/sprites/equip_armor_basic.png",
+  equipArmorGreen: "assets/sprites/equip_armor_green.png",
+  equipArmorGold: "assets/sprites/equip_armor_gold.png",
+  equipBootsBasic: "assets/sprites/equip_boots_basic.png",
+};
+
+const themeAssetCounts = {
+  plastic: { monsters: 8, equipmentTiers: 4, souvenirs: 8, facilities: 4 },
+  paper: { monsters: 8, equipmentTiers: 4, souvenirs: 8, facilities: 4 },
+  textile: { monsters: 8, equipmentTiers: 3, souvenirs: 8, facilities: 4 },
+};
+
+for (const [themeId, counts] of Object.entries(themeAssetCounts)) {
+  for (let i = 0; i < counts.monsters; i += 1) imagePaths[`${themeId}Monster${i}`] = `assets/themes/${themeId}_monster_${i}.png`;
+  for (let tier = 0; tier < counts.equipmentTiers; tier += 1) {
+    for (let slot = 0; slot < 5; slot += 1) imagePaths[`${themeId}Equip${tier}_${slot}`] = `assets/themes/${themeId}_equip_${tier}_${slot}.png`;
+  }
+  for (let i = 0; i < counts.souvenirs; i += 1) imagePaths[`${themeId}Souvenir${i}`] = `assets/themes/${themeId}_souvenir_${i}.png`;
+  for (let i = 0; i < counts.facilities; i += 1) imagePaths[`${themeId}Facility${i}`] = `assets/themes/${themeId}_facility_${i}.png`;
+}
+
+const imgs = {};
+let assetsReady = false;
+
+const scrapTypes = [
+  ["plastic", "塑料带", "itemPlastic"],
+  ["glass", "玻璃片", "itemGlass"],
+  ["metal", "金属板", "itemMetal"],
+  ["circuit", "电路板", "itemCircuit"],
+  ["coil", "铜线圈", "itemCoil"],
+  ["gear", "齿轮", "itemGear"],
+  ["battery", "电池芯", "itemBattery"],
+  ["paper", "纸板纤维", "paperSouvenir1"],
+  ["fabric", "再生布料", "textileSouvenir1"],
+  ["token", "回收章", "itemToken"],
+];
+
+const buffs = {
+  heart: { name: "修复心", img: "itemHeart", apply: () => heal(26) },
+  shield: { name: "护盾", img: "itemShield", apply: () => addShield(22) },
+  speed: { name: "疾行鞋", img: "itemSpeed", apply: () => addBuff("speed", 9) },
+  magnet: { name: "磁力", img: "itemMagnet", apply: () => addBuff("magnet", 10) },
+  power: { name: "强化", img: "itemPower", apply: () => addBuff("power", 8) },
+  cooldown: { name: "冷却", img: "itemCooldown", apply: () => addBuff("cooldown", 8) },
+};
+
+const equipments = [
+  {
+    id: "wrench_basic",
+    slot: "weapon",
+    name: "环形修补扳手",
+    img: "equipWrenchBasic",
+    desc: "圆圈震荡攻击，范围稳定，适合新手清怪。",
+    attackType: "circle",
+    damage: 18,
+    cooldown: 0.44,
+    reach: 84,
+    cost: {},
+  },
+  {
+    id: "wrench_green",
+    slot: "weapon",
+    name: "循环挥砍钳",
+    img: "equipWrenchGreen",
+    desc: "前方扇形挥砍，伤害更集中，打 Boss 更舒服。",
+    attackType: "slash",
+    damage: 30,
+    cooldown: 0.36,
+    reach: 122,
+    cost: { plastic: 8, metal: 6, gear: 2 },
+  },
+  {
+    id: "wrench_blue",
+    slot: "weapon",
+    name: "追踪电磁钳",
+    img: "equipWrenchBlue",
+    desc: "发射追踪子弹，自动锁定最近敌人或 Boss。",
+    attackType: "homing",
+    damage: 24,
+    cooldown: 0.32,
+    reach: 520,
+    cost: { circuit: 7, coil: 5, battery: 2 },
+  },
+  {
+    id: "wrench_gold",
+    slot: "weapon",
+    name: "公益光束钳",
+    img: "equipWrenchGold",
+    desc: "挥砍加追踪弹的混合高阶武器。",
+    attackType: "hybrid",
+    damage: 38,
+    cooldown: 0.28,
+    reach: 150,
+    cost: { token: 5, circuit: 9, coil: 7 },
+  },
+  {
+    id: "helmet_basic",
+    slot: "helmet",
+    name: "分拣头盔",
+    img: "equipHelmetBasic",
+    desc: "进入战斗时提供少量护盾。",
+    shield: 10,
+    cost: {},
+  },
+  {
+    id: "helmet_blue",
+    slot: "helmet",
+    name: "蓝屏护目盔",
+    img: "equipHelmetBlue",
+    desc: "减少陷阱和 Boss 弹幕伤害。",
+    shield: 24,
+    trapResist: 0.35,
+    cost: { glass: 7, circuit: 5, token: 2 },
+  },
+  {
+    id: "armor_basic",
+    slot: "armor",
+    name: "旧料护甲",
+    img: "equipArmorBasic",
+    desc: "基础防护，增加生命上限。",
+    hp: 18,
+    defense: 1,
+    cost: {},
+  },
+  {
+    id: "armor_green",
+    slot: "armor",
+    name: "循环背心",
+    img: "equipArmorGreen",
+    desc: "提高生命，并提升碎片拾取范围。",
+    hp: 34,
+    defense: 3,
+    pickup: 18,
+    cost: { plastic: 6, glass: 4, metal: 6 },
+  },
+  {
+    id: "armor_gold",
+    slot: "armor",
+    name: "Scrap Loop 白金甲",
+    img: "equipArmorGold",
+    desc: "高阶护甲，承受 Boss 弹幕更稳。",
+    hp: 56,
+    defense: 6,
+    pickup: 28,
+    cost: { token: 6, metal: 10, battery: 3 },
+  },
+  {
+    id: "boots_basic",
+    slot: "boots",
+    name: "分拣靴",
+    img: "equipBootsBasic",
+    desc: "提高移动速度，减少被包围风险。",
+    speed: 20,
+    cost: {},
+  },
+];
+
+equipments.forEach((item) => {
+  if (!item.theme) item.theme = "electronic";
+});
+
+equipments.push(
+  { id: "plastic_visor", theme: "plastic", slot: "helmet", name: "瓶盖护目盔", img: "plasticEquip1_1", desc: "塑料主题头盔。提高护盾并减少陷阱伤害，适合新手刷塑料港。", shield: 18, trapResist: 0.18, cost: { plastic: 8, glass: 2 } },
+  { id: "plastic_sprayer", theme: "plastic", slot: "weapon", name: "瓶片弹射枪", img: "plasticEquip0_0", desc: "发射多枚可轻微追踪的瓶片弹，清小怪效率高。", attackType: "burst", damage: 18, cooldown: 0.34, reach: 520, projectileCount: 3, cost: { plastic: 8, glass: 3 } },
+  { id: "plastic_recycle_armor", theme: "plastic", slot: "armor", name: "塑料蜂巢甲", img: "plasticEquip1_2", desc: "轻量护甲，提升拾取范围，并让环形攻击半径更大。", hp: 26, defense: 2, pickup: 42, areaBonus: 18, cost: { plastic: 10, token: 2 } },
+  { id: "plastic_cap_boots", theme: "plastic", slot: "boots", name: "瓶盖轮靴", img: "plasticEquip2_4", desc: "高速移动，触发技能后短暂加速。", speed: 42, cost: { plastic: 9, gear: 2 } },
+
+  { id: "paper_fold_helmet", theme: "paper", slot: "helmet", name: "折纸守护盔", img: "paperEquip1_1", desc: "纸板主题头盔。提供护盾，技能冷却期间更适合稳步推进。", shield: 16, trapResist: 0.12, cost: { paper: 8, token: 1 } },
+  { id: "paper_blade", theme: "paper", slot: "weapon", name: "折纸穿刺剑", img: "paperEquip2_0", desc: "前方穿透挥砍，命中越密集越好用。", attackType: "pierce", damage: 28, cooldown: 0.36, reach: 168, cost: { paper: 8, gear: 2 } },
+  { id: "paper_layer_armor", theme: "paper", slot: "armor", name: "瓦楞层叠甲", img: "paperEquip1_2", desc: "受到碰撞时反伤附近敌人，适合尸潮。", hp: 38, defense: 4, reflect: 14, cost: { paper: 10, token: 2 } },
+  { id: "paper_light_boots", theme: "paper", slot: "boots", name: "纸翼轻靴", img: "paperEquip3_4", desc: "降低攻击冷却，让连续挥砍更顺。", speed: 26, cooldownBoost: 0.05, cost: { paper: 9, token: 2 } },
+
+  { id: "textile_patch_cap", theme: "textile", slot: "helmet", name: "补丁软帽", img: "textileEquip1_1", desc: "布料主题头盔。增加护盾，配合缠绕技能能稳定拉开距离。", shield: 20, trapResist: 0.1, cost: { fabric: 8, coil: 1 } },
+  { id: "textile_sabre", theme: "textile", slot: "weapon", name: "织线弯刀", img: "textileEquip1_0", desc: "弧形挥砍附带织线束缚，近战容错更好。", attackType: "slash", damage: 31, cooldown: 0.34, reach: 136, bind: 1.6, cost: { fabric: 8, coil: 2 } },
+  { id: "textile_patch_armor", theme: "textile", slot: "armor", name: "拼布修复甲", img: "textileEquip1_2", desc: "击败敌人时有轻微回复，适合长时间防守。", hp: 34, defense: 3, lifesteal: 3, cost: { fabric: 10, token: 2 } },
+  { id: "textile_lace_boots", theme: "textile", slot: "boots", name: "绳结跑靴", img: "textileEquip2_4", desc: "移动更稳，拾取范围更大。", speed: 32, pickup: 26, cost: { fabric: 9, coil: 2 } },
+);
+
+const recipes = [
+  {
+    id: "ocean_charm",
+    name: "海洋瓶片挂件",
+    img: "itemGlass",
+    desc: "用玻璃片和塑料带做成的蓝绿挂件。",
+    cost: { plastic: 4, glass: 4, token: 1 },
+    points: 14,
+  },
+  {
+    id: "circuit_flower",
+    name: "电路花纪念牌",
+    img: "itemCircuit",
+    desc: "电子废物再设计，适合公益展台展示。",
+    cost: { circuit: 5, coil: 3, gear: 2 },
+    points: 20,
+  },
+  {
+    id: "clean_medal",
+    name: "Scrap Loop 行动徽章",
+    img: "itemToken",
+    desc: "把金属板压制成可兑换徽章。",
+    cost: { metal: 6, gear: 3, token: 2 },
+    points: 24,
+  },
+];
+
+const printRewards = [
+  {
+    id: "blue_cat_print",
+    name: "蓝猫双层 3D 打印摆件券",
+    img: "bossCat",
+    desc: "Boss 掉落的打印碎片可兑换 3D 废物打印纪念品预约券。",
+    cost: { printShard: 8 },
+    points: 60,
+  },
+  {
+    id: "recycle_core_print",
+    name: "回收核心钥匙扣券",
+    img: "itemToken",
+    desc: "适合低门槛兑换的 3D 打印公益纪念品。",
+    cost: { printShard: 4, token: 2 },
+    points: 34,
+  },
+];
+
+const backgrounds = [
+  { id: "hub", name: "Scrap Loop 基地", img: "bgHub", cost: {}, desc: "默认公益基地背景。" },
+  { id: "arena", name: "清洁废料场", img: "bgArena", cost: { plastic: 5, metal: 5 }, desc: "适合战斗感更强的主页展示。" },
+  { id: "lab", name: "电子再生实验室", img: "bgLab", cost: { circuit: 5, coil: 4 }, desc: "电子废弃物主题背景。" },
+  { id: "market", name: "公益兑换市场", img: "bgMarket", cost: { token: 3 }, desc: "更适合兑换和活动展示。" },
+  { id: "boss", name: "蓝猫打印核心", img: "bgMarket", cost: { printShard: 3 }, desc: "击败 Boss 后可解锁的纪念品主题背景。" },
+];
+
+const enemyDeck = [
+  { name: "履带垃圾桶", img: "enemyBinbot", hp: 38, speed: 58, damage: 6, drop: ["plastic", "metal"] },
+  { name: "酸液团", img: "enemySludge", hp: 30, speed: 48, damage: 8, drop: ["glass", "battery"] },
+  { name: "监测眼", img: "enemyEye", hp: 28, speed: 72, damage: 6, drop: ["circuit", "coil"] },
+  { name: "伪装回收箱", img: "enemyMimic", hp: 52, speed: 44, damage: 10, drop: ["gear", "token"] },
+  { name: "清障机", img: "enemyGuard", hp: 68, speed: 48, damage: 12, drop: ["metal", "battery", "token"] },
+];
+
+const themeConfigs = {
+  electronic: {
+    id: "electronic",
+    name: "电子废料",
+    short: "电子",
+    desc: "电路、金属、电池与机械污染物，适合当前基础关卡。",
+    preview: "itemCircuit",
+    color: "#30e4e0",
+    drops: ["circuit", "coil", "battery", "metal", "gear"],
+    puzzle: ["circuit", "coil", "battery", "metal"],
+    enemies: enemyDeck,
+    souvenirs: recipes.map((r) => ({ name: r.name, img: r.img, desc: r.desc })),
+    facilities: ["facilityTerminal", "facilityRecycler", "facilityPrinter", "facilityShelf"],
+  },
+  plastic: {
+    id: "plastic",
+    name: "塑料废料",
+    short: "塑料",
+    desc: "塑料瓶、瓶盖、泡沫和海洋塑料，适合讲解可回收塑料再生。",
+    preview: "plasticFacility0",
+    color: "#3d93ff",
+    drops: ["plastic", "glass", "token"],
+    puzzle: ["plastic", "glass", "plastic", "token"],
+    enemies: Array.from({ length: 8 }, (_, i) => ({ name: `塑料污染体 ${i + 1}`, img: `plasticMonster${i}`, hp: 34 + i * 5, speed: 46 + i * 4, damage: 6 + Math.floor(i / 2), drop: ["plastic", i % 2 ? "glass" : "token"] })),
+    souvenirs: Array.from({ length: 8 }, (_, i) => ({ name: ["瓶片蓝猫", "瓶盖徽章", "海塑钥匙扣", "再生小树", "瓶身花盆", "环保台灯", "塑料砖小屋", "再生滑板"][i], img: `plasticSouvenir${i}`, desc: "由塑料废料再生制作的公益纪念品。" })),
+    facilities: Array.from({ length: 4 }, (_, i) => `plasticFacility${i}`),
+  },
+  paper: {
+    id: "paper",
+    name: "纸板纸类",
+    short: "纸类",
+    desc: "纸箱、票据、纸杯和纸浆再造，适合讲解分类、压缩与再生纸。",
+    preview: "paperFacility0",
+    color: "#b9874c",
+    drops: ["paper", "gear", "token"],
+    puzzle: ["paper", "paper", "gear", "token"],
+    enemies: Array.from({ length: 8 }, (_, i) => ({ name: `纸板污染体 ${i + 1}`, img: `paperMonster${i}`, hp: 32 + i * 6, speed: 44 + i * 4, damage: 6 + Math.floor(i / 2), drop: ["paper", i % 2 ? "gear" : "token"] })),
+    souvenirs: Array.from({ length: 8 }, (_, i) => ({ name: ["纸板城堡", "再生纸本", "种子明信片", "纸灯笼", "纸板机器人", "纸浆摆件", "环保礼盒", "书屋模型"][i], img: `paperSouvenir${i}`, desc: "由纸板纸类废料再生制作的公益纪念品。" })),
+    facilities: Array.from({ length: 4 }, (_, i) => `paperFacility${i}`),
+  },
+  textile: {
+    id: "textile",
+    name: "布料纺织",
+    short: "布料",
+    desc: "旧衣、纽扣、线轴与布料边角料，适合讲解修补、再设计和循环纺织。",
+    preview: "textileFacility0",
+    color: "#46d57a",
+    drops: ["fabric", "coil", "token"],
+    puzzle: ["fabric", "coil", "fabric", "token"],
+    enemies: Array.from({ length: 8 }, (_, i) => ({ name: `布料污染体 ${i + 1}`, img: `textileMonster${i}`, hp: 36 + i * 5, speed: 48 + i * 3, damage: 6 + Math.floor(i / 2), drop: ["fabric", i % 2 ? "coil" : "token"] })),
+    souvenirs: Array.from({ length: 8 }, (_, i) => ({ name: ["拼布玩偶", "再生布袋", "布花胸针", "编织手环", "牛仔背包", "拼布猫挂件", "布艺书签", "织物挂毯"][i], img: `textileSouvenir${i}`, desc: "由旧布料和纺织边角料再设计的公益纪念品。" })),
+    facilities: Array.from({ length: 4 }, (_, i) => `textileFacility${i}`),
+  },
+};
+
+const battleMaps = [
+  { id: "green_yard", name: "晨光回收庭院", img: "bgArena", tint: "rgba(232,255,240,0.16)", accent: "#75ff9f" },
+  { id: "blue_sorter", name: "蓝色分拣车间", img: "bgLab", tint: "rgba(210,244,255,0.18)", accent: "#30e4e0" },
+  { id: "market_lane", name: "公益兑换街区", img: "bgMarket", tint: "rgba(255,248,218,0.18)", accent: "#ffd861" },
+  { id: "plastic_bay", name: "塑料潮汐港", img: "bgArena", tint: "rgba(89,174,255,0.18)", accent: "#3d93ff" },
+  { id: "paper_workshop", name: "纸板压缩厂", img: "bgMarket", tint: "rgba(214,166,92,0.16)", accent: "#d6a65c" },
+  { id: "textile_lane", name: "布料修补街", img: "bgLab", tint: "rgba(91,214,129,0.14)", accent: "#46d57a" },
+];
+
+const collectibleCards = [
+  { id: "battery_remote", theme: "electronic", name: "遥控器电池", img: "itemBattery", rarity: "危险回忆", story: "自从他被主人从空调遥控器上扣下后，他一路流浪在厨余垃圾中，外壳被汤汁泡软，里面的金属一点点渗出。被你带回基地后，他第一次知道：危险废物要去专门回收点，而不是混进普通垃圾袋。" },
+  { id: "circuit_flower_card", theme: "electronic", name: "电路花纪念牌", img: "itemCircuit", rarity: "再生电光", story: "她曾是一块旧玩具的电路板，按钮失灵后被丢进抽屉。基地把铜线和芯片重新整理，她被做成一朵会发光的纪念花，提醒大家电子废料里既有资源，也有需要谨慎处理的部分。" },
+  { id: "coil_firefly", theme: "electronic", name: "铜线萤火虫", img: "itemCoil", rarity: "导线故事", story: "这卷铜线以前藏在坏掉的耳机里，缠得像一团烦恼。修复师把它绕成萤火虫的翅膀，让它在展柜里发亮：越小的电子配件，越容易被忽略，也越需要分类回收。" },
+  { id: "gear_medal", theme: "electronic", name: "齿轮行动徽章", img: "itemGear", rarity: "机械余温", story: "他曾经负责让小电机转动，停下后还以为自己没用了。你把齿轮交给纪念工坊，压成一枚行动徽章，送给完成第一次分类任务的玩家。" },
+  { id: "metal_seed", theme: "electronic", name: "金属种子", img: "itemMetal", rarity: "资源种子", story: "金属片不该一直沉在垃圾堆里。清洗、分拣、重塑之后，它被做成一颗种子形状的吊坠，意思是：回收不是结束，是下一次制造的开始。" },
+  { id: "glass_chip", theme: "electronic", name: "玻璃屏碎星", img: "itemGlass", rarity: "屏幕碎光", story: "她来自一块摔裂的屏幕。破碎时她很锋利，混进垃圾袋会划伤清运人员。展馆把她封进透明徽章里，告诉大家：尖锐物也需要安全包裹后再处理。" },
+  { id: "token_stamp", theme: "electronic", name: "回收站章", img: "itemToken", rarity: "公益通行", story: "这枚章不是钱，却能兑换一次真实行动：修好一个零件、完成一轮分拣、换回一张3D废物打印纪念券。它记录你让废品少走的一段弯路。" },
+  { id: "cat_print_ticket", theme: "electronic", name: "蓝猫打印券", img: "bossCat", rarity: "Boss纪念", story: "蓝猫Boss被净化后留下打印碎片。它不再吼叫，而是变成一张预约券，等待用回收材料打印成真实摆件，证明游戏里的选择也能走到现实里。" },
+
+  { id: "bottle_crab", theme: "plastic", name: "瓶壳小蟹", img: "plasticSouvenir0", rarity: "海湾守望", story: "一个饮料瓶漂到排水口，瓶身裂开后成了小蟹的壳。你把它带回塑料港，做成透明蓝色摆件：塑料轻、方便，却会在环境里停留很久。" },
+  { id: "cap_badge", theme: "plastic", name: "瓶盖徽章", img: "plasticSouvenir1", rarity: "盖子证词", story: "瓶盖总觉得自己太小，不会造成麻烦。直到他卡进泥沙里，被风吹到河边。现在他被压成徽章，提醒大家小件塑料也要一起收集。" },
+  { id: "ocean_keychain", theme: "plastic", name: "海塑钥匙扣", img: "plasticSouvenir2", rarity: "潮汐来信", story: "这枚钥匙扣由被捞回的塑料碎片制成。它的蓝色不是海水，而是海水曾经承受过的颜色。把它挂在包上，就是一次小小的提醒。" },
+  { id: "plastic_tree", theme: "plastic", name: "再生小树", img: "plasticSouvenir3", rarity: "瓶片新芽", story: "瓶片被清洗、破碎、重塑，变成一棵小树模型。它不会真的长高，却会让玩家记得：回收前先倒空、压扁、分类，能让再生流程更顺畅。" },
+  { id: "bottle_planter", theme: "plastic", name: "瓶身花盆", img: "plasticSouvenir4", rarity: "透明花盆", story: "半截瓶身原本在垃圾桶里等待被混运。工坊给它钻孔、打磨，放进种子和泥土，它终于从一次性容器变成了每天都能照顾的东西。" },
+  { id: "cap_lamp", theme: "plastic", name: "瓶盖台灯", img: "plasticSouvenir5", rarity: "夜间分拣", story: "许多彩色瓶盖拼成灯罩，灯光透出来像小小的地图。展馆说明牌写着：同类材料越干净，回收再利用的机会越高。" },
+  { id: "brick_house", theme: "plastic", name: "塑料砖小屋", img: "plasticSouvenir6", rarity: "压缩之家", story: "泡沫盒怪被击败后留下轻飘飘的碎块。压缩机把它们做成模型砖，小屋不大，却装着‘减少一次性用品’的任务。" },
+  { id: "recycle_skate", theme: "plastic", name: "再生滑板", img: "plasticSouvenir7", rarity: "少年路线", story: "滑板的轮子来自旧瓶盖，板面来自再生塑料。它属于基地最快的巡查员，也提醒玩家：重复使用比丢掉再买更酷。" },
+
+  { id: "cardboard_castle", theme: "paper", name: "纸板城堡", img: "paperSouvenir0", rarity: "快递王国", story: "纸箱曾保护过一份快递，却在拆开后被随手扔在雨里。晒干、压平、裁切后，它变成展馆里的城堡：纸类回收最怕被油污和水浸坏。" },
+  { id: "seed_notebook", theme: "paper", name: "再生纸本", img: "paperSouvenir1", rarity: "书页新生", story: "一本旧作业本说：我不是被写满就结束了。基地把干净纸张再制成新本子，第一页印着‘先双面使用，再分类回收’。" },
+  { id: "seed_postcard", theme: "paper", name: "种子明信片", img: "paperSouvenir2", rarity: "会发芽的信", story: "这张纸里藏着种子。写完祝福后可以埋进土里，长出一点绿色。它让废纸讲了第二个故事，而不是直接变成负担。" },
+  { id: "paper_lantern", theme: "paper", name: "纸灯笼", img: "paperSouvenir3", rarity: "柔光档案", story: "旧票据被揉皱后很难再读。分拣员把干净纸片做成灯笼，光从纤维里透出来，像在说：纸类回收前请保持干燥。" },
+  { id: "paper_robot", theme: "paper", name: "纸板机器人", img: "paperSouvenir4", rarity: "瓦楞伙伴", story: "瓦楞纸板怪以前躲在仓库角落，觉得自己只配被压扁。你给它装上绿色标志，它变成会打招呼的小机器人，负责提醒大家拆掉胶带再回收。" },
+  { id: "pulp_bear", theme: "paper", name: "纸浆小熊", img: "paperSouvenir5", rarity: "柔软成型", story: "碎纸进入纸浆池，像忘掉了自己的旧字迹。成型后的小熊坐在展柜里，告诉玩家：纸张可以循环，但每次循环都需要更细心的分类。" },
+  { id: "gift_box", theme: "paper", name: "环保礼盒", img: "paperSouvenir6", rarity: "第二次礼物", story: "礼盒不是为了被拆开就丢。它被重新折叠、加固、贴上回收标志，成为可以再次送出的礼物，里面装着一张‘少买包装’的提醒卡。" },
+  { id: "book_house", theme: "paper", name: "书屋模型", img: "paperSouvenir7", rarity: "纸页小镇", story: "旧书页不再完整，但它们组成了一间小书屋。展馆给它的说明是：能捐赠和交换的书，先让知识继续旅行。" },
+
+  { id: "patch_doll", theme: "textile", name: "拼布玩偶", img: "textileSouvenir0", rarity: "修补朋友", story: "一件破洞T恤觉得自己只剩下洞。裁剪、缝合、填充之后，它成为拼布玩偶。它学会的第一句话是：小破损先修补，不急着丢掉。" },
+  { id: "recloth_bag", theme: "textile", name: "再生布袋", img: "textileSouvenir1", rarity: "随身循环", story: "旧窗帘被剪成布袋，陪玩家去基地领取奖励。它不喜欢一次性袋子，因为每少用一个，都是给它的同伴少一点压力。" },
+  { id: "button_flower", theme: "textile", name: "布花胸针", img: "textileSouvenir2", rarity: "纽扣花开", story: "纽扣从旧衬衫上掉下来，以为没人会找它。修补摊把它缝在布花中央，它成了最亮的花心，也让玩家记得拆下可再用配件。" },
+  { id: "woven_bracelet", theme: "textile", name: "编织手环", img: "textileSouvenir3", rarity: "线头约定", story: "几根线头被丢在裁剪台边缘，差点被扫走。它们被编成手环，代表伙伴之间的约定：不要让还能用的布料直接进垃圾桶。" },
+  { id: "cowboy_bag", theme: "textile", name: "牛仔背包", img: "textileSouvenir4", rarity: "耐磨远行", story: "旧牛仔裤的膝盖磨白了，但布料还很结实。工坊把裤腿改成背包，口袋里塞着一张地图，通往布料修补街。" },
+  { id: "patch_cat", theme: "textile", name: "拼布猫挂件", img: "textileSouvenir5", rarity: "软布守护", story: "几块布边角拼成一只小猫。它的眼睛由旧纽扣做成，尾巴来自一段鞋带。它守着展柜，向玩家眨眼：边角料也有角色。" },
+  { id: "fabric_bookmark", theme: "textile", name: "布艺书签", img: "textileSouvenir6", rarity: "书页之间", story: "这条书签原来是一截校服袖口。它变薄、变轻，却保留了布料的纹理。每夹住一页，它都在提醒：旧衣物可以捐赠、改造或规范回收。" },
+  { id: "wall_hanging", theme: "textile", name: "织物挂毯", img: "textileSouvenir7", rarity: "线与风景", story: "许多颜色不同的布条被织成一幅小山水。它不是昂贵材料做的，却有最完整的故事：被珍惜的旧物，也能重新成为风景。" },
+];
+
+const dialogueScenes = [
+  ["电子废料", "废电池Boss：就是你们把我从遥控器里扣下后随手乱丢，我在湿垃圾里漏出苦味，才变成现在这样。", "我会击败你，但也会把危险废物送到专门回收点。", "电池、含电池设备和尖锐电子部件不要混进普通垃圾。"],
+  ["电子废料", "旧手机：我不是没用了，我的金属、屏幕和电池都还在身体里，只是需要被拆解得更认真。", "我带你去电子废物分拣台。", "电子废弃物含可回收材料，也可能含需要规范处理的有害成分。"],
+  ["电子废料", "耳机线：我被缠成一团时，大家只想剪断我。", "先解开，再分类。", "小型电子配件容易被忽略，集中回收更安全。"],
+  ["电子废料", "碎屏玻璃：别用手直接抓我，我会划伤清运员。", "我用纸包好并贴上提醒。", "尖锐废弃物需要安全包裹，避免二次伤害。"],
+  ["电子废料", "电路板守卫：人类只看见垃圾，看不见铜和芯片。", "我看见的是资源，也看见风险。", "回收不是把危险藏起来，而是按流程处理。"],
+  ["电子废料", "充电宝：我肚子里还有电，挤压会发热。", "我不会把你塞进普通垃圾车。", "含锂电设备存在起火风险，应通过正规渠道回收。"],
+  ["电子废料", "旧灯泡：我的玻璃很薄，里面的材料也不适合乱丢。", "我会按当地要求单独处理。", "特殊灯具和电子照明不应随意破碎丢弃。"],
+  ["电子废料", "键盘怪：我有太多缝隙，灰尘和零件都藏在里面。", "先清理，再拆分。", "拆解前的清洁能提升回收质量。"],
+  ["电子废料", "遥控器：我被丢掉前，其实只需要换电池。", "能修先修，不能修再回收。", "延长物品寿命比直接丢弃更优先。"],
+  ["电子废料", "蓝猫Boss：我由打印失败的边角料和乱丢电池进化而来。", "那我就用正确分类让你恢复原样。", "Boss碎片用于3D废物打印兑换，连接游戏与真实公益。"],
+
+  ["塑料废料", "塑料瓶蟹：我漂过排水沟，差点进了河。", "我把你倒空压扁，送去塑料回收线。", "瓶类回收前应尽量倒空、压扁并保持干净。"],
+  ["塑料废料", "瓶盖蜘蛛：你们总觉得我太小，没有关系。", "小物件也一起收集。", "小塑料容易散落，集中收集能减少环境残留。"],
+  ["塑料废料", "泡沫盒怪：汤汁让我变得油腻，没人愿意接近。", "被污染的包装要先判断是否可清洁。", "食物污染会降低塑料和纸类回收价值。"],
+  ["塑料废料", "吸管蛇：我只被用了一顿饭，却能躲很久很久。", "少用一次性用品。", "减少使用比事后回收更靠前。"],
+  ["塑料废料", "洗衣液桶：我还有残液，混进去会弄脏一整袋。", "我先倒空、冲洗、晾干。", "清洁度影响再生材料质量。"],
+  ["塑料废料", "塑料袋幽灵：风一吹，我就离开垃圾桶。", "我把轻薄塑料扎紧收集。", "轻薄塑料容易飘散，应避免松散丢弃。"],
+  ["塑料废料", "渔网甲虫：我缠住过很多不该缠住的东西。", "回收网具和绳索，减少缠绕风险。", "绳网类废物会造成缠绕危害，需要专门收集。"],
+  ["塑料废料", "瓶片精灵：我想变成新东西，但我怕被混进脏垃圾。", "我会保持分类干净。", "同类、干净、干燥能提高再生机会。"],
+  ["塑料废料", "塑料Boss：你们制造我很快，忘记我更快。", "我会从源头少用，也会正确回收。", "回收教育要同时强调减量、重复使用和分类。"],
+  ["塑料废料", "再生滑板：我来自瓶盖和瓶身，不来自魔法。", "那我会告诉同学们再生材料的来路。", "可见的再生产品能帮助青少年理解循环经济。"],
+
+  ["纸板纸类", "纸箱怪：雨水让我软掉，油污让我失去下一次机会。", "我把纸类放到干燥回收区。", "纸类回收应尽量保持干燥、少油污。"],
+  ["纸板纸类", "外卖纸袋：我看起来是纸，但里面还有塑料膜。", "我先看清材料再分类。", "复合材料要按当地规则处理，不能只看外表。"],
+  ["纸板纸类", "旧作业本：我还有空白页，别急着把我丢掉。", "先双面用完。", "重复使用是回收前的重要一步。"],
+  ["纸板纸类", "快递盒：胶带像盔甲一样贴在我身上。", "我拆掉胶带再压平。", "纸箱回收前压平并去除明显杂物更利于分拣。"],
+  ["纸板纸类", "票据幽灵：我的字迹褪了，但纤维还在。", "干净纸张还能再生。", "纸纤维可循环，但次数和质量有限。"],
+  ["纸板纸类", "纸杯人：我里面有防水层，别把我当普通白纸。", "我会按规则丢到对应类别。", "纸杯和普通办公纸回收路径可能不同。"],
+  ["纸板纸类", "纸浆池：我把碎片重新揉成一团。", "我按顺序投放样本。", "解密关卡用流程顺序训练分类意识。"],
+  ["纸板纸类", "纸板Boss：人类把湿纸和干纸混在一起，害我长出霉斑盔甲。", "我会完成干燥分拣任务。", "源头分类能降低后端处理负担。"],
+  ["纸板纸类", "种子明信片：我想变成一株植物。", "我会把你的故事写给下一个人。", "创意纪念品能把公益行动转成可分享的记忆。"],
+  ["纸板纸类", "书屋模型：知识先流动，再回收。", "能捐的书先捐。", "捐赠、交换、再利用优先于回收。"],
+
+  ["布料纺织", "旧T恤：我只是破了一个洞，不是整个生命都坏掉了。", "我先学会缝补。", "修补和改造能延长衣物寿命。"],
+  ["布料纺织", "纽扣怪：我掉下来以后，被扫进角落。", "我把可用配件拆下来收好。", "纽扣、拉链等配件可以被再利用。"],
+  ["布料纺织", "牛仔裤：我的膝盖磨白了，但口袋还很结实。", "你可以变成背包。", "耐磨布料适合再设计。"],
+  ["布料纺织", "线轴蜘蛛：剪裁台留下的线头，比你想象得多。", "边角料也分类收集。", "生产和手工过程中的边角料同样值得回收。"],
+  ["布料纺织", "校服幽灵：毕业后我被塞进柜子最深处。", "能捐赠就先让你继续被穿。", "还能穿的衣物适合捐赠或交换。"],
+  ["布料纺织", "染色布团：颜色太杂，我害怕没人要。", "我会按材质和状态分开。", "纺织品回收常受材质混纺、染色和破损影响。"],
+  ["布料纺织", "布料Boss：你们追着新款跑，把我丢成一座山。", "我不只战斗，也会学习少买和多穿。", "青少年消费选择同样影响废弃物产生量。"],
+  ["布料纺织", "织物挂毯：我由很多碎片组成，却不是拼凑人生。", "每块旧布都有故事。", "故事化展示能提升参与感。"],
+  ["布料纺织", "再生布袋：我愿意陪你去很多地方。", "我会少拿一次性袋子。", "随身可重复使用物品是低门槛行动。"],
+  ["布料纺织", "拼布猫：边角料也能成为角色。", "我把你放进展馆卡牌。", "收藏系统让废品拥有可记忆的名字。"],
+
+  ["基地剧情", "站长：这里不是垃圾场，是废品的第二次报名处。", "我想成为分拣学员。", "基地引导玩家理解循环流程。"],
+  ["基地剧情", "传送门：请选择主题，别把所有废物都当成同一种敌人。", "我先从电子废料开始。", "不同废物有不同处理路径。"],
+  ["基地剧情", "装备师：武器不是为了炫耀，而是为了更安全地清障。", "我会按主题选择装备。", "装备系统映射不同材料的处理方式。"],
+  ["基地剧情", "展馆管理员：每张卡牌都要讲一个废品的经历。", "我点开卡牌阅读故事。", "叙事能让知识更容易被记住。"],
+  ["基地剧情", "兑换台：打印券不是奖励终点，是现实行动的入口。", "我收集Boss碎片兑换纪念品。", "实物兑换让虚拟公益有现实反馈。"],
+  ["基地剧情", "解密终端：先读提示，再按顺序投放。", "我不再乱点按钮。", "可玩解密比单纯文字说明更适合学习流程。"],
+  ["基地剧情", "技能训练机：强大的技能也需要冷却，环保行动也需要持续。", "我选择适合关卡的技能。", "20秒冷却技能提供策略节奏。"],
+  ["基地剧情", "任务板：今天的目标不是刷分，而是少让一种废品走错路。", "我领取分类任务。", "任务化目标适合青少年持续参与。"],
+  ["基地剧情", "修复站：你倒下时，材料不会消失，知识也不会消失。", "我整理装备再出发。", "失败惩罚轻量化，鼓励继续尝试。"],
+  ["基地剧情", "背景终端：当你解锁新背景，也是在解锁一种废物流的故事。", "我切换到对应主题。", "环境变化帮助区分主题关卡。"],
+];
+
+const skills = [
+  { id: "invincible", name: "无敌回收罩", img: "itemShield", cost: {}, desc: "5秒内免疫伤害，适合Boss弹幕阶段。", effect: "invincible" },
+  { id: "screen_clean", name: "全屏净化波", img: "itemToken", cost: { token: 3 }, desc: "对全屏敌人造成一次大量伤害。", effect: "screenDamage" },
+  { id: "power50", name: "循环增幅", img: "itemPower", cost: { circuit: 4, token: 2 }, desc: "8秒内伤害提升50%。", effect: "damageBoost" },
+  { id: "time_slow", name: "慢速分拣", img: "itemCooldown", cost: { gear: 4, token: 2 }, desc: "6秒内敌人和弹幕速度下降。", effect: "slow" },
+  { id: "magnet_sweep", name: "磁力回收", img: "itemMagnet", cost: { coil: 5, token: 2 }, desc: "立即吸取大范围碎片与buff。", effect: "magnet" },
+  { id: "heal_bloom", name: "修复花开", img: "itemHeart", cost: { plastic: 5, glass: 3 }, desc: "回复生命并产生一圈治疗光效。", effect: "heal" },
+  { id: "freeze_foam", name: "低温泡沫", img: "plasticSouvenir3", cost: { plastic: 8, token: 2 }, desc: "冻结场上敌人3秒。", effect: "freeze" },
+  { id: "paper_wall", name: "纸板屏障", img: "paperSouvenir0", cost: { paper: 8, token: 2 }, desc: "获得护盾并短暂反弹近身伤害。", effect: "barrier" },
+  { id: "thread_bind", name: "织线束缚", img: "textileSouvenir3", cost: { fabric: 8, coil: 2 }, desc: "缠绕附近敌人并持续造成伤害。", effect: "bind" },
+  { id: "drone_helper", name: "分拣无人机", img: "facilityTerminal", cost: { circuit: 7, battery: 2, token: 2 }, desc: "召唤追踪弹幕支援6秒。", effect: "drone" },
+  { id: "dash_clean", name: "冲刺清扫", img: "itemSpeed", cost: { gear: 5, plastic: 4 }, desc: "向当前方向冲刺并留下伤害轨迹。", effect: "dash" },
+  { id: "reflect_shell", name: "反射外壳", img: "itemMetal", cost: { metal: 8, token: 2 }, desc: "7秒内受到碰撞时反伤周围敌人。", effect: "reflect" },
+];
+
+const state = {
+  scene: "title",
+  battleMap: "arena",
+  paused: false,
+  last: 0,
+  keys: new Set(),
+  pad: new Set(),
+  mouse: { x: W / 2, y: H / 2 },
+  nearby: null,
+  attacks: [],
+  projectiles: [],
+  enemyShots: [],
+  shockwaves: [],
+  enemies: [],
+  pickups: [],
+  traps: [],
+  obstacles: [],
+  battlePortal: null,
+  boss: null,
+  wave: 1,
+  hordeTime: 0,
+  hordeKills: 0,
+  hordeSpawnTimer: 0,
+  puzzle: null,
+  prompt: "",
+  toastTimer: 0,
+  buffTimer: 0,
+  bossDamageFloaters: [],
+  skillEffects: [],
+  camera: { x: 0, y: 0 },
+  world: { w: W, h: H },
+  mapId: "green_yard",
+};
+
+const player = {
+  x: 640,
+  y: 488,
+  w: 46,
+  h: 58,
+  dir: "down",
+  faceX: 1,
+  faceY: 0,
+  hp: 118,
+  maxHp: 118,
+  shield: 10,
+  attackCd: 0,
+  skillCd: 0,
+  hurtCd: 0,
+  frame: 0,
+  buffs: {},
+};
+
+let save = loadSave();
+
+const hubFacilities = [
+  { id: "story", name: "剧情导览", hint: "Enter 看回收剧情", img: "facilityBoard", x: 280, y: 292, w: 124, h: 82, action: showStory },
+  { id: "workbench", name: "纪念工坊", hint: "Enter 合成收藏品", img: "facilityWorkbench", x: 460, y: 292, w: 132, h: 78, action: showCraft },
+  { id: "portal", name: "主题传送门", hint: "Enter 选主题和模式", img: "facilityPortal", x: 640, y: 292, w: 128, h: 112, action: showPortalMenu },
+  { id: "museum", name: "收藏展馆", hint: "Enter 查看图鉴", img: "facilityShelf", x: 820, y: 292, w: 132, h: 88, action: showMuseum },
+  { id: "exchange", name: "实物兑换", hint: "Enter 兑换实物券", img: "facilityExchange", x: 1000, y: 292, w: 134, h: 84, action: showExchange },
+  { id: "locker", name: "装备间", hint: "Enter 穿脱装备", img: "facilityLocker", x: 280, y: 448, w: 116, h: 86, action: showInventory },
+  { id: "medbay", name: "修复站", hint: "Enter 恢复状态", img: "facilityMedbay", x: 460, y: 448, w: 108, h: 96, action: useMedbay },
+  { id: "recycler", name: "精炼机", hint: "Enter 碎片换回收章", img: "facilityRecycler", x: 640, y: 448, w: 112, h: 104, action: useRecycler },
+  { id: "board", name: "任务板", hint: "Enter 查看任务", img: "facilityBoard", x: 820, y: 448, w: 126, h: 84, action: showMissions },
+  { id: "terminal", name: "背景终端", hint: "Enter 切换背景", img: "facilityTerminal", x: 1000, y: 448, w: 130, h: 78, action: showBackgrounds },
+];
+
+const safeHubSpawnPoints = [
+  { x: 640, y: 570 },
+  { x: 640, y: 520 },
+  { x: 250, y: 520 },
+  { x: 1030, y: 520 },
+  { x: 250, y: 350 },
+  { x: 1030, y: 350 },
+];
+
+function defaultSave() {
+  return {
+    scraps: Object.fromEntries(scrapTypes.map(([id]) => [id, id === "token" ? 1 : 2])),
+    printShard: 0,
+    souvenirs: {},
+    printTickets: {},
+    points: 0,
+    redeemed: [],
+    unlocked: ["wrench_basic", "helmet_basic", "armor_basic", "boots_basic"],
+    equipped: { weapon: "wrench_basic", helmet: "helmet_basic", armor: "armor_basic", boots: "boots_basic" },
+    unlockedBackgrounds: ["hub"],
+    currentBackground: "hub",
+    currentTheme: "electronic",
+    unlockedSkills: ["invincible"],
+    equippedSkill: "invincible",
+    stats: { collected: 0, defeated: 0, crafted: 0, bestWave: 1, bossDefeated: 0 },
+    claimed: {},
+  };
+}
+
+function migrateSave(raw) {
+  const base = defaultSave();
+  const old = raw || {};
+  return {
+    ...base,
+    ...old,
+    scraps: { ...base.scraps, ...(old.scraps || {}) },
+    souvenirs: { ...base.souvenirs, ...(old.souvenirs || {}) },
+    printTickets: { ...base.printTickets, ...(old.printTickets || {}) },
+    equipped: { ...base.equipped, ...(old.equipped || {}) },
+    stats: { ...base.stats, ...(old.stats || {}) },
+    claimed: { ...base.claimed, ...(old.claimed || {}) },
+    unlockedBackgrounds: old.unlockedBackgrounds || base.unlockedBackgrounds,
+    currentBackground: old.currentBackground || "hub",
+    currentTheme: themeConfigs[old.currentTheme] ? old.currentTheme : "electronic",
+    unlockedSkills: old.unlockedSkills || base.unlockedSkills,
+    equippedSkill: skills.some((s) => s.id === old.equippedSkill) ? old.equippedSkill : base.equippedSkill,
+    printShard: old.printShard || 0,
+  };
+}
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY) || OLD_SAVE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
+    return raw ? migrateSave(JSON.parse(raw)) : defaultSave();
+  } catch {
+    return defaultSave();
+  }
+}
+
+function saveGame() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+}
+
+function currentTheme() {
+  return themeConfigs[save.currentTheme] || themeConfigs.electronic;
+}
+
+function currentEnemyDeck() {
+  return currentTheme().enemies || enemyDeck;
+}
+
+function randomBattleMap(preferredTheme = save.currentTheme) {
+  const themed = {
+    electronic: ["green_yard", "blue_sorter", "market_lane"],
+    plastic: ["plastic_bay", "blue_sorter", "green_yard"],
+    paper: ["paper_workshop", "market_lane", "green_yard"],
+    textile: ["textile_lane", "green_yard", "blue_sorter"],
+  }[preferredTheme] || battleMaps.map((m) => m.id);
+  const pool = battleMaps.filter((m) => themed.includes(m.id));
+  return pool[Math.floor(Math.random() * pool.length)] || battleMaps[0];
+}
+
+function currentMap() {
+  return battleMaps.find((m) => m.id === state.mapId) || battleMaps[0];
+}
+
+function setWorld(w = 1760, h = 1120) {
+  state.world = { w, h };
+  updateCamera();
+}
+
+function cameraScene() {
+  return ["battle", "boss", "horde", "puzzle"].includes(state.scene);
+}
+
+function updateCamera() {
+  if (!cameraScene()) {
+    state.camera.x = 0;
+    state.camera.y = 0;
+    return;
+  }
+  state.camera.x = clamp(player.x - W / 2, 0, Math.max(0, state.world.w - W));
+  state.camera.y = clamp(player.y - H / 2, 0, Math.max(0, state.world.h - H));
+}
+
+function selectTheme(id) {
+  if (!themeConfigs[id]) return;
+  save.currentTheme = id;
+  saveGame();
+  showPortalMenu();
+  toast(`已切换主题：${currentTheme().name}`);
+}
+
+function loadImages() {
+  return Promise.all(
+    Object.entries(imagePaths).map(
+      ([key, src]) =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            imgs[key] = img;
+            resolve();
+          };
+          img.onerror = () => {
+            console.warn(`Missing image: ${src}`);
+            resolve();
+          };
+          img.src = src;
+        }),
+    ),
+  ).then(() => {
+    assetsReady = true;
+    recomputePlayerStats();
+    updateHud();
+    draw();
+  });
+}
+
+function getEquip(id) {
+  return equipments.find((item) => item.id === id);
+}
+
+function recomputePlayerStats() {
+  const armor = getEquip(save.equipped.armor);
+  const helmet = getEquip(save.equipped.helmet);
+  player.maxHp = 100 + (armor?.hp || 0);
+  player.hp = Math.min(player.hp || player.maxHp, player.maxHp);
+  player.shield = Math.max(player.shield || 0, helmet?.shield || 0);
+}
+
+function currentStats() {
+  const weapon = getEquip(save.equipped.weapon);
+  const armor = getEquip(save.equipped.armor);
+  const helmet = getEquip(save.equipped.helmet);
+  const boots = getEquip(save.equipped.boots);
+  const damageBoost = player.buffs.damageBoost ? 1.5 : 1;
+  return {
+    weapon,
+    damage: Math.round(((weapon?.damage || 16) + (player.buffs.power ? 8 : 0)) * damageBoost),
+    cooldown: Math.max(0.14, (weapon?.cooldown || 0.45) - (boots?.cooldownBoost || 0) - (player.buffs.cooldown ? 0.11 : 0)),
+    reach: (weapon?.reach || 84) + (armor?.areaBonus || 0),
+    defense: armor?.defense || 0,
+    speed: 190 + (boots?.speed || 0) + (player.buffs.speed ? 64 : 0),
+    pickup: 44 + (armor?.pickup || 0) + (boots?.pickup || 0) + (player.buffs.magnet ? 110 : 0),
+    trapResist: helmet?.trapResist || 0,
+    reflect: (armor?.reflect || 0) + (player.buffs.reflect ? 24 : 0),
+    lifesteal: armor?.lifesteal || 0,
+  };
+}
+
+function startNew() {
+  save = defaultSave();
+  player.hp = 118;
+  player.shield = 10;
+  saveGame();
+  enterHub("欢迎来到废品轮回 Scrap Loop。靠近传送门按 Enter 选择主题和模式。");
+}
+
+function continueGame() {
+  enterHub("存档已载入。传送门可选择小怪清理或 Boss 模式。");
+}
+
+function resetRuntimeLists() {
+  state.enemies = [];
+  state.pickups = [];
+  state.traps = [];
+  state.attacks = [];
+  state.projectiles = [];
+  state.enemyShots = [];
+  state.shockwaves = [];
+  state.bossDamageFloaters = [];
+  state.skillEffects = [];
+  state.camera = { x: 0, y: 0 };
+  state.world = { w: W, h: H };
+  state.buffTimer = 0;
+  state.boss = null;
+  state.battlePortal = null;
+  state.hordeTime = 0;
+  state.hordeKills = 0;
+  state.hordeSpawnTimer = 0;
+  state.puzzle = null;
+}
+
+function enterHub(message) {
+  titleScreen.classList.add("hidden");
+  closeModal();
+  state.scene = "hub";
+  state.paused = false;
+  state.wave = Math.max(1, save.stats.bestWave || 1);
+  resetRuntimeLists();
+  state.obstacles = hubFacilities.map((f) => facilityRect(f));
+  player.x = safeHubSpawnPoints[0].x;
+  player.y = safeHubSpawnPoints[0].y;
+  snapToSafeHubPoint();
+  player.dir = "down";
+  player.faceX = 1;
+  player.faceY = 0;
+  recomputePlayerStats();
+  toast(message || "回到主页。");
+  saveGame();
+}
+
+function snapToSafeHubPoint() {
+  const current = { x: player.x, y: player.y };
+  const candidates = safeHubSpawnPoints
+    .map((point) => ({ ...point, score: distance(point, current) }))
+    .sort((a, b) => a.score - b.score);
+  const safe = candidates.find((point) => isPlayerPointSafe(point)) || candidates[0];
+  player.x = safe.x;
+  player.y = safe.y;
+}
+
+function isPlayerPointSafe(point) {
+  const rect = entityRect({ ...player, x: point.x, y: point.y });
+  return !state.obstacles.some((o) => rectsOverlap(rect, o));
+}
+
+function showPortalMenu() {
+  const theme = currentTheme();
+  const themeCards = Object.values(themeConfigs)
+    .map((t) => `
+      <button class="theme-option ${save.currentTheme === t.id ? "active" : ""}" data-action="selectTheme" data-id="${t.id}">
+        <img src="${imagePaths[t.preview]}" alt="" />
+        <span>${t.name}</span>
+      </button>`)
+    .join("");
+  showModal(
+    `
+    <div class="modal-header">
+      <div>
+        <h2>传送门模式选择</h2>
+        <p>当前主题：${theme.name}。先选择废物主题，再进入小怪、尸潮、解密或 Boss。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <h3>废物主题</h3>
+    <div class="theme-picker">${themeCards}</div>
+    <h3>玩法模式</h3>
+    <div class="modal-grid">
+      <article class="card good">
+        <div class="card-title"><img src="${imagePaths[theme.preview]}" alt="" /><span>${theme.short}小怪清理</span></div>
+        <p>击败当前主题污染体，获得对应废物碎片，用于收藏品合成、展馆收集和升级循环。</p>
+        <button class="primary" data-action="startMob">进入小怪模式</button>
+      </article>
+      <article class="card warn">
+        <div class="card-title"><img src="${imagePaths.bossCat}" alt="" /><span>Boss：蓝猫回收守卫</span></div>
+        <p>参考 3D 打印纪念品设计的 Boss。击败后获得“打印碎片”，可兑换 3D 废物打印实物券。</p>
+        <button class="primary" data-action="startBoss">挑战 Boss</button>
+      </article>
+      <article class="card warn">
+        <div class="card-title"><img src="${imagePaths.enemyGuard}" alt="" /><span>尸潮防守</span></div>
+        <p>连续防守 60 秒，敌人会分批涌入。场地 buff 定时刷新，适合测试追踪弹、挥砍和范围武器。</p>
+        <button class="primary" data-action="startHorde">进入尸潮</button>
+      </article>
+      <article class="card good">
+        <div class="card-title"><img src="${imagePaths.facilityRecycler}" alt="" /><span>解密回收站</span></div>
+        <p>玩法：先捡地上的目标样本，再找发光设备按 Enter 投放。顺序错会扣血，完成可获得材料奖励。</p>
+        <button class="primary" data-action="startPuzzle">进入解密</button>
+      </article>
+    </div>
+    <div class="modal-footer">快捷键：Enter 靠近传送门打开，Esc 返回主页。</div>
+  `,
+    "bgMarket",
+  );
+}
+
+function showMuseum() {
+  const theme = currentTheme();
+  const monsters = theme.enemies
+    .map((enemy) => `
+      <article class="card">
+        <div class="card-title"><img src="${imagePaths[enemy.img]}" alt="" /><span>${enemy.name}</span></div>
+        <p>主题污染体。击败后掉落 ${enemy.drop.map(resourceName).join("、")}。</p>
+      </article>`)
+    .join("");
+  const souvenirs = theme.souvenirs
+    .map((item) => `
+      <article class="card good">
+        <div class="card-title"><img src="${imagePaths[item.img]}" alt="" /><span>${item.name}</span></div>
+        <p>${item.desc}</p>
+      </article>`)
+    .join("");
+  const facilities = theme.facilities
+    .map((img, index) => `
+      <article class="card warn">
+        <div class="card-title"><img src="${imagePaths[img]}" alt="" /><span>${theme.short}设施 ${index + 1}</span></div>
+        <p>用于后续主题地图、展馆陈列和回收流程教学。</p>
+      </article>`)
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>收藏展馆：${theme.name}</h2>
+        <p>这里按主题展示怪物图鉴、可兑换纪念品和回收设施。后续可以把真实收集进度、兑换记录和科普卡片接进来。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <h3>污染体图鉴</h3>
+    <div class="modal-grid">${monsters}</div>
+    <h3>公益纪念品</h3>
+    <div class="modal-grid">${souvenirs}</div>
+    <h3>主题设施</h3>
+    <div class="modal-grid">${facilities}</div>
+    <div class="modal-footer">提示：在传送门切换主题后，展馆内容也会切换。快捷键：Enter 靠近展馆打开。</div>
+  `, "bgMarket");
+}
+
+function showStory() {
+  const theme = currentTheme();
+  const next = theme.puzzle.map(resourceName).join(" → ");
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>剧情导览</h2>
+        <p>面向青少年的回收公益剧情与操作说明。当前主题：${theme.name}</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="dialog-list">
+      <article class="dialog-card">
+        <img src="${imagePaths.heroFront}" alt="" />
+        <div><strong>回收站学员</strong><p>我把废物带到废品轮回基地，不只是为了打怪，而是想知道它们还能变成什么。</p></div>
+      </article>
+      <article class="dialog-card">
+        <img src="${imagePaths[theme.preview]}" alt="" />
+        <div><strong>站长提示</strong><p>${theme.desc} 小怪模式负责收集材料，解密模式负责学习正确分拣顺序。</p></div>
+      </article>
+      <article class="dialog-card">
+        <img src="${imagePaths.facilityRecycler}" alt="" />
+        <div><strong>解密规则</strong><p>当前分拣顺序：${next}。先捡地上的目标样本，再靠近发光设备按 Enter 投放。投错会扣血，但不会丢材料。</p></div>
+      </article>
+      <article class="dialog-card">
+        <img src="${imagePaths.facilityShelf}" alt="" />
+        <div><strong>展馆目标</strong><p>每个主题都有怪物图鉴和纪念品展柜。后续可以把“收集齐一套主题”作为兑换真实公益纪念品的前置任务。</p></div>
+      </article>
+    </div>
+    <div class="modal-footer">建议游玩路线：剧情导览 → 传送门选主题 → 小怪收集 → 解密学习 → 展馆查看 → Boss 兑换。</div>
+  `, "bgHub");
+}
+
+function startBattle() {
+  closeModal();
+  const theme = currentTheme();
+  state.scene = "battle";
+  state.mapId = randomBattleMap(theme.id).id;
+  resetRuntimeLists();
+  state.scene = "battle";
+  state.mapId = randomBattleMap(theme.id).id;
+  setWorld(1780, 1120);
+  state.buffTimer = 2.2;
+  state.traps = createTraps();
+  state.obstacles = createBattleObstacles();
+  player.x = 250;
+  player.y = 560;
+  player.hp = Math.max(player.hp, Math.floor(player.maxHp * 0.75));
+  player.shield = Math.max(player.shield, (getEquip(save.equipped.helmet)?.shield || 0) + 12);
+  player.hurtCd = 1.2;
+  spawnWave();
+  toast(`第 ${state.wave} 波：${theme.name}污染体会掉落主题碎片。`);
+}
+
+function startBoss() {
+  closeModal();
+  state.scene = "boss";
+  resetRuntimeLists();
+  state.scene = "boss";
+  state.buffTimer = 2.6;
+  state.mapId = "market_lane";
+  setWorld(1780, 1120);
+  state.obstacles = [
+    { x: 160, y: 132, w: 138, h: 84 },
+    { x: 1480, y: 150, w: 150, h: 84 },
+    { x: 180, y: 914, w: 150, h: 70 },
+    { x: 1460, y: 900, w: 160, h: 72 },
+  ];
+  player.x = 260;
+  player.y = 560;
+  player.hp = Math.max(player.hp, Math.floor(player.maxHp * 0.9));
+  player.shield = Math.max(player.shield, (getEquip(save.equipped.helmet)?.shield || 0) + 20);
+  player.hurtCd = 1.4;
+  const bossMaxHp = 480 + save.stats.bossDefeated * 45;
+  state.boss = {
+    name: "蓝猫回收守卫",
+    x: 1150,
+    y: 548,
+    w: 250,
+    h: 260,
+    hp: bossMaxHp,
+    maxHp: bossMaxHp,
+    phase: 1,
+    shotTimer: 0.8,
+    ringTimer: 2.5,
+    summonTimer: 5,
+    hitCd: 0,
+    defeated: false,
+  };
+  toast("Boss 模式：击败蓝猫回收守卫，获得 3D 打印兑换碎片。");
+}
+
+function startHorde() {
+  closeModal();
+  const theme = currentTheme();
+  state.scene = "horde";
+  resetRuntimeLists();
+  state.scene = "horde";
+  state.mapId = randomBattleMap(theme.id).id;
+  setWorld(1780, 1120);
+  state.buffTimer = 1.8;
+  state.hordeTime = 60;
+  state.hordeKills = 0;
+  state.hordeSpawnTimer = 0.2;
+  state.traps = createTraps();
+  state.obstacles = createBattleObstacles();
+  player.x = 250;
+  player.y = 560;
+  player.hp = Math.max(player.hp, Math.floor(player.maxHp * 0.85));
+  player.shield = Math.max(player.shield, (getEquip(save.equipped.helmet)?.shield || 0) + 16);
+  player.hurtCd = 1.2;
+  spawnHordePack(3);
+  toast(`${theme.name}尸潮：坚持 60 秒，buff 会在场地内刷新。`);
+}
+
+function startPuzzle() {
+  closeModal();
+  const theme = currentTheme();
+  state.scene = "puzzle";
+  resetRuntimeLists();
+  state.scene = "puzzle";
+  state.mapId = randomBattleMap(theme.id).id;
+  setWorld(1660, 1040);
+  state.obstacles = [
+    { x: 244, y: 180, w: 122, h: 74 },
+    { x: 1330, y: 180, w: 132, h: 76 },
+    { x: 252, y: 828, w: 132, h: 70 },
+    { x: 1320, y: 816, w: 146, h: 72 },
+  ];
+  state.puzzle = {
+    order: theme.puzzle,
+    step: 0,
+    held: {},
+    stations: [
+      { id: theme.puzzle[0], name: `${resourceName(theme.puzzle[0])}预处理台`, x: 430, y: 290, img: "facilityRecycler" },
+      { id: theme.puzzle[1], name: `${resourceName(theme.puzzle[1])}分选机`, x: 1230, y: 290, img: "itemMagnet" },
+      { id: theme.puzzle[2], name: `${resourceName(theme.puzzle[2])}检测台`, x: 430, y: 760, img: "facilityTerminal" },
+      { id: theme.puzzle[3], name: `${resourceName(theme.puzzle[3])}封存箱`, x: 1230, y: 760, img: "facilityLocker" },
+    ],
+  };
+  player.x = 830;
+  player.y = 520;
+  spawnPuzzleItems();
+  toast(`${theme.name}解密：按底部提示收集材料，再靠近发光设备按 Enter 投放。`);
+}
+
+function spawnHordePack(count) {
+  const deck = currentEnemyDeck();
+  for (let i = 0; i < count; i += 1) {
+    const def = deck[Math.floor(Math.random() * deck.length)];
+    const edge = Math.floor(Math.random() * 4);
+    const ranges = [
+      { minX: 80, maxX: 220, minY: 120, maxY: state.world.h - 120 },
+      { minX: state.world.w - 220, maxX: state.world.w - 80, minY: 120, maxY: state.world.h - 120 },
+      { minX: 260, maxX: state.world.w - 260, minY: 110, maxY: 190 },
+      { minX: 260, maxX: state.world.w - 260, minY: state.world.h - 190, maxY: state.world.h - 110 },
+    ][edge];
+    const pos = randomOpenPoint(ranges.minX, ranges.maxX, ranges.minY, ranges.maxY, 68, 64);
+    const scale = 1 + Math.max(0, 60 - state.hordeTime) * 0.008;
+    state.enemies.push({
+      ...def,
+      id: `horde-${Date.now()}-${i}`,
+      x: pos.x,
+      y: pos.y,
+      w: def.img === "enemyGuard" ? 76 : 70,
+      h: def.img === "enemyGuard" ? 78 : 70,
+      maxHp: Math.floor(def.hp * scale),
+      hp: Math.floor(def.hp * scale),
+      speed: def.speed + Math.max(0, 60 - state.hordeTime) * 0.45,
+      hitCd: 0,
+    });
+  }
+}
+
+function spawnPuzzleItems() {
+  const theme = currentTheme();
+  const ids = [...theme.puzzle, ...theme.drops, "token"];
+  for (let i = 0; i < 16; i += 1) {
+    const id = ids[i % ids.length];
+    const point = randomOpenPoint(260, state.world.w - 260, 160, state.world.h - 160, 40, 40);
+    spawnPickup(point.x, point.y, "puzzle", id);
+  }
+}
+
+function spawnWave() {
+  const deck = currentEnemyDeck();
+  const count = Math.min(2 + Math.floor(state.wave * 1.1), 8);
+  for (let i = 0; i < count; i += 1) {
+    const def = deck[(i + state.wave) % deck.length];
+    const pos = randomOpenPoint(520, state.world.w - 160, 140, state.world.h - 150, 76, 56);
+    state.enemies.push({
+      ...def,
+      id: `${Date.now()}-${i}`,
+      x: pos.x,
+      y: pos.y,
+      w: def.img === "enemyGuard" ? 76 : 70,
+      h: def.img === "enemyGuard" ? 78 : 70,
+      maxHp: Math.floor(def.hp + state.wave * 8),
+      hp: Math.floor(def.hp + state.wave * 8),
+      hitCd: 0,
+    });
+  }
+}
+
+function createBattleObstacles() {
+  return [
+    { x: 382, y: 198, w: 96, h: 76 },
+    { x: 768, y: 162, w: 152, h: 68 },
+    { x: 1188, y: 246, w: 116, h: 72 },
+    { x: 460, y: 842, w: 124, h: 76 },
+    { x: 1030, y: 810, w: 130, h: 74 },
+    { x: 1360, y: 560, w: 148, h: 82 },
+  ];
+}
+
+function createTraps() {
+  return [
+    { kind: "spikes", img: "trapSpikes", x: 650, y: 560, w: 82, h: 58, damage: 12, cd: 0 },
+    { kind: "saw", img: "trapSaw", x: 1082, y: 522, w: 82, h: 70, damage: 14, cd: 0 },
+    { kind: "vent", img: "trapVent", x: 860, y: 322, w: 72, h: 72, damage: 9, cd: 0 },
+    { kind: "spikes", img: "trapSpikes", x: 1370, y: 760, w: 82, h: 58, damage: 12, cd: 0 },
+  ];
+}
+
+function facilityRect(f) {
+  return { x: f.x - f.w / 2, y: f.y - f.h / 2 + f.h * 0.28, w: f.w, h: f.h * 0.62 };
+}
+
+function randomOpenPoint(minX, maxX, minY, maxY, w, h) {
+  for (let i = 0; i < 120; i += 1) {
+    const point = { x: rand(minX, maxX), y: rand(minY, maxY) };
+    const rect = entityRect({ ...point, w, h });
+    if (!state.obstacles.some((o) => rectsOverlap(rect, o)) && distance(point, player) > 240) return point;
+  }
+  return { x: rand(minX, maxX), y: rand(minY, maxY) };
+}
+
+function update(dt) {
+  if (!assetsReady || state.scene === "title" || state.paused) return;
+  updateTimers(dt);
+  movePlayer(dt);
+  if (state.scene === "hub") updateHub();
+  if (state.scene === "battle") updateBattle(dt);
+  if (state.scene === "boss") updateBoss(dt);
+  if (state.scene === "horde") updateHorde(dt);
+  if (state.scene === "puzzle") updatePuzzle(dt);
+  updateSkillAutoFire(dt);
+  updateCamera();
+  updateProjectiles(dt);
+  updateHud();
+}
+
+function updateTimers(dt) {
+  player.attackCd = Math.max(0, player.attackCd - dt);
+  player.skillCd = Math.max(0, player.skillCd - dt);
+  player.hurtCd = Math.max(0, player.hurtCd - dt);
+  player.frame += dt;
+  for (const key of Object.keys(player.buffs)) {
+    player.buffs[key] -= dt;
+    if (player.buffs[key] <= 0) delete player.buffs[key];
+  }
+  for (const a of state.attacks) a.ttl -= dt;
+  state.attacks = state.attacks.filter((a) => a.ttl > 0);
+  for (const effect of state.skillEffects) effect.ttl -= dt;
+  state.skillEffects = state.skillEffects.filter((effect) => effect.ttl > 0);
+  for (const floater of state.bossDamageFloaters) {
+    floater.y -= 28 * dt;
+    floater.ttl -= dt;
+  }
+  state.bossDamageFloaters = state.bossDamageFloaters.filter((f) => f.ttl > 0);
+  state.toastTimer -= dt;
+  if (state.toastTimer <= 0) toastEl.classList.add("hidden");
+}
+
+function movementVector() {
+  let dx = 0;
+  let dy = 0;
+  if (state.keys.has("arrowleft") || state.keys.has("a") || state.pad.has("left")) dx -= 1;
+  if (state.keys.has("arrowright") || state.keys.has("d") || state.pad.has("right")) dx += 1;
+  if (state.keys.has("arrowup") || state.keys.has("w") || state.pad.has("up")) dy -= 1;
+  if (state.keys.has("arrowdown") || state.keys.has("s") || state.pad.has("down")) dy += 1;
+  if (dx || dy) {
+    const len = Math.hypot(dx, dy);
+    dx /= len;
+    dy /= len;
+    player.faceX = dx;
+    player.faceY = dy;
+    if (dx && dy) player.dir = dy < 0 ? (dx > 0 ? "up-right" : "up-left") : dx > 0 ? "down-right" : "down-left";
+    else player.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up";
+  }
+  return { dx, dy };
+}
+
+function movePlayer(dt) {
+  const { dx, dy } = movementVector();
+  if (!dx && !dy) return;
+  const stats = currentStats();
+  moveEntity(player, dx * stats.speed * dt, dy * stats.speed * dt, state.obstacles);
+  const world = cameraScene() ? state.world : { w: W, h: H };
+  player.x = clamp(player.x, 38, world.w - 38);
+  player.y = clamp(player.y, 74, world.h - 40);
+}
+
+function moveEntity(entity, dx, dy, obstacles) {
+  entity.x += dx;
+  let rect = entityRect(entity);
+  if (obstacles.some((o) => rectsOverlap(rect, o))) entity.x -= dx;
+  entity.y += dy;
+  rect = entityRect(entity);
+  if (obstacles.some((o) => rectsOverlap(rect, o))) entity.y -= dy;
+}
+
+function updateHub() {
+  state.nearby = null;
+  for (const f of hubFacilities) {
+    if (distance(player, f) < 112) {
+      state.nearby = f;
+      break;
+    }
+  }
+  state.prompt = state.nearby
+    ? `${state.nearby.name}：${state.nearby.hint}`
+    : "WASD 移动 · Enter 互动 · E 装备 · C 合成 · X 兑换 · B 背景 · M 任务";
+}
+
+function updateBattle(dt) {
+  updateTraps(dt);
+  updateBuffSpawner(dt);
+  for (const enemy of state.enemies) {
+    enemy.hitCd = Math.max(0, enemy.hitCd - dt);
+    enemy.bindTimer = Math.max(0, (enemy.bindTimer || 0) - dt);
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const speed = enemy.speed * enemySpeedFactor(enemy);
+    moveEntity(enemy, (dx / len) * speed * dt, (dy / len) * speed * dt, state.obstacles);
+    if (rectsOverlap(entityRect(player), entityRect(enemy)) && enemy.hitCd <= 0) {
+      hurtPlayer(enemy.damage, `${enemy.name} 撞击了你。`);
+      enemy.hitCd = 0.85;
+    }
+  }
+  collectPickups();
+  state.enemies = state.enemies.filter((enemy) => {
+    if (enemy.hp > 0) return true;
+    dropLoot(enemy);
+    save.stats.defeated += 1;
+    return false;
+  });
+  if (!state.enemies.length && !state.battlePortal) {
+    state.battlePortal = { x: 1088, y: 358, r: 64, mode: "home" };
+    save.stats.bestWave = Math.max(save.stats.bestWave, state.wave);
+    saveGame();
+    toast("小怪清理完成。Enter 回主页，N 继续下一波。");
+  }
+  state.prompt =
+    state.battlePortal && distance(player, state.battlePortal) < 90
+      ? "传送门：Enter 回主页并保存 · N 继续下一波"
+    : `小怪模式：Space/点击攻击 · 剩余 ${state.enemies.length} 个 · Esc 回主页`;
+}
+
+function updateHorde(dt) {
+  updateTraps(dt);
+  updateBuffSpawner(dt);
+  state.hordeTime = Math.max(0, state.hordeTime - dt);
+  state.hordeSpawnTimer -= dt;
+  if (state.hordeSpawnTimer <= 0 && !state.battlePortal) {
+    const intensity = 2 + Math.floor((60 - state.hordeTime) / 14);
+    spawnHordePack(intensity);
+    state.hordeSpawnTimer = Math.max(1.05, 2.8 - (60 - state.hordeTime) * 0.025);
+  }
+  for (const enemy of state.enemies) {
+    enemy.hitCd = Math.max(0, enemy.hitCd - dt);
+    enemy.bindTimer = Math.max(0, (enemy.bindTimer || 0) - dt);
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const speed = enemy.speed * enemySpeedFactor(enemy);
+    moveEntity(enemy, (dx / len) * speed * dt, (dy / len) * speed * dt, state.obstacles);
+    if (rectsOverlap(entityRect(player), entityRect(enemy)) && enemy.hitCd <= 0) {
+      hurtPlayer(enemy.damage, `${enemy.name} 冲撞了你。`);
+      enemy.hitCd = 0.8;
+    }
+  }
+  collectPickups();
+  state.enemies = state.enemies.filter((enemy) => {
+    if (enemy.hp > 0) return true;
+    dropLoot(enemy);
+    state.hordeKills += 1;
+    save.stats.defeated += 1;
+    return false;
+  });
+  if ((state.hordeTime <= 0 || state.hordeKills >= 36) && !state.battlePortal) {
+    addReward({ token: 2, metal: 4, plastic: 4 });
+    save.stats.bestWave = Math.max(save.stats.bestWave, state.wave);
+    state.battlePortal = { x: 1088, y: 358, r: 64, mode: "home" };
+    saveGame();
+    toast("尸潮防守完成：获得回收章和基础材料奖励。");
+  }
+  state.prompt =
+    state.battlePortal && distance(player, state.battlePortal) < 90
+      ? "尸潮完成：Enter 回主页 · N 再来一轮"
+      : `尸潮防守：剩余 ${Math.ceil(state.hordeTime)}s · 击败 ${state.hordeKills}/36 · Space 攻击 · 场地刷新 buff`;
+}
+
+function updatePuzzle() {
+  collectPickups();
+  const puzzle = state.puzzle;
+  if (!puzzle) return;
+  puzzle.nearby = puzzle.stations.find((station) => distance(player, station) < 86) || null;
+  const next = puzzle.order[puzzle.step];
+  const nextName = resourceName(next);
+  state.prompt = puzzle.nearby
+    ? `${puzzle.nearby.name}：Enter 投放 · 当前目标 ${nextName} · 已携带 ${puzzle.held[next] || 0}`
+    : `解密回收：目标 ${puzzle.step + 1}/${puzzle.order.length} ${nextName} · 收集材料并按顺序投放`;
+}
+
+function updateBoss(dt) {
+  const boss = state.boss;
+  if (!boss) return;
+  boss.hitCd = Math.max(0, boss.hitCd - dt);
+  updateBuffSpawner(dt);
+  if (boss.hp <= boss.maxHp * 0.62) boss.phase = 2;
+  if (boss.hp <= boss.maxHp * 0.32) boss.phase = 3;
+
+  boss.x += Math.sin(performance.now() / 900) * dt * 30;
+  boss.shotTimer -= dt;
+  boss.ringTimer -= dt;
+  boss.summonTimer -= dt;
+  if (boss.shotTimer <= 0) {
+    fireBossBurst(boss, boss.phase >= 3 ? 12 : boss.phase >= 2 ? 9 : 6);
+    boss.shotTimer = boss.phase >= 3 ? 1.1 : boss.phase >= 2 ? 1.45 : 1.9;
+  }
+  if (boss.ringTimer <= 0) {
+    state.shockwaves.push({ x: boss.x, y: boss.y + 70, r: 18, speed: 230, ttl: 2.2, damage: boss.phase >= 2 ? 15 : 11, hit: false });
+    boss.ringTimer = boss.phase >= 3 ? 2.4 : 3.2;
+  }
+  if (boss.summonTimer <= 0 && boss.phase >= 2 && state.enemies.length < 3) {
+    const deck = currentEnemyDeck();
+    const def = deck[Math.floor(Math.random() * Math.min(3, deck.length))];
+    const pos = randomOpenPoint(260, 1060, 130, 600, 64, 64);
+    state.enemies.push({ ...def, id: `boss-add-${Date.now()}`, x: pos.x, y: pos.y, w: 64, h: 64, hp: 42, maxHp: 42, hitCd: 0 });
+    boss.summonTimer = 6;
+  }
+
+  for (const enemy of state.enemies) {
+    enemy.hitCd = Math.max(0, enemy.hitCd - dt);
+    enemy.bindTimer = Math.max(0, (enemy.bindTimer || 0) - dt);
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const speed = enemy.speed * enemySpeedFactor(enemy);
+    moveEntity(enemy, (dx / len) * speed * dt, (dy / len) * speed * dt, state.obstacles);
+    if (rectsOverlap(entityRect(player), entityRect(enemy)) && enemy.hitCd <= 0) {
+      hurtPlayer(enemy.damage, `${enemy.name} 干扰了你。`);
+      enemy.hitCd = 0.9;
+    }
+  }
+  state.enemies = state.enemies.filter((enemy) => {
+    if (enemy.hp > 0) return true;
+    dropLoot(enemy);
+    save.stats.defeated += 1;
+    return false;
+  });
+
+  updateEnemyShots(dt);
+  updateShockwaves(dt);
+  collectPickups();
+
+  if (boss.hp <= 0 && !boss.defeated) {
+    boss.defeated = true;
+    const reward = 5 + boss.phase;
+    save.printShard += reward;
+    save.stats.bossDefeated += 1;
+    if (!save.unlockedBackgrounds.includes("boss")) save.unlockedBackgrounds.push("boss");
+    state.battlePortal = { x: 1088, y: 358, r: 64, mode: "home" };
+    saveGame();
+    toast(`蓝猫回收守卫已净化！获得打印碎片 ×${reward}，已解锁 Boss 背景。`);
+  }
+
+  state.prompt =
+    state.battlePortal && distance(player, state.battlePortal) < 90
+      ? "Boss 已净化：Enter 回主页 · X 可兑换 3D 打印实物券"
+      : "Boss 模式：躲避弹幕与震荡波，使用追踪弹或挥砍更有效";
+}
+
+function updateTraps(dt) {
+  for (const trap of state.traps) {
+    trap.cd = Math.max(0, trap.cd - dt);
+    if (rectsOverlap(entityRect(player), trapRect(trap)) && trap.cd <= 0) {
+      const stats = currentStats();
+      hurtPlayer(Math.max(2, Math.round(trap.damage * (1 - stats.trapResist))), "陷阱已触发，注意地面标识。");
+      trap.cd = 0.9;
+    }
+  }
+}
+
+function enemySpeedFactor(enemy) {
+  if (player.buffs.freeze) return 0;
+  let factor = player.buffs.slow ? 0.45 : 1;
+  if (enemy.bindTimer > 0) factor *= 0.25;
+  return factor;
+}
+
+function fireBossBurst(boss, count) {
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / count + performance.now() / 1000;
+    state.enemyShots.push({
+      x: boss.x,
+      y: boss.y + 18,
+      vx: Math.cos(angle) * 150,
+      vy: Math.sin(angle) * 150,
+      r: 9,
+      damage: boss.phase >= 3 ? 13 : 10,
+      ttl: 4.2,
+    });
+  }
+  const dx = player.x - boss.x;
+  const dy = player.y - boss.y;
+  const len = Math.hypot(dx, dy) || 1;
+  state.enemyShots.push({ x: boss.x, y: boss.y + 16, vx: (dx / len) * 230, vy: (dy / len) * 230, r: 12, damage: 16, ttl: 3.3 });
+}
+
+function updateEnemyShots(dt) {
+  const speedFactor = player.buffs.freeze ? 0 : player.buffs.slow ? 0.5 : 1;
+  const world = state.world || { w: W, h: H };
+  state.enemyShots = state.enemyShots.filter((shot) => {
+    shot.x += shot.vx * dt * speedFactor;
+    shot.y += shot.vy * dt * speedFactor;
+    shot.ttl -= dt;
+    if (distance(player, shot) < shot.r + 24) {
+      hurtPlayer(shot.damage, "被 Boss 回收能量弹命中。");
+      return false;
+    }
+    return shot.ttl > 0 && shot.x > -40 && shot.x < world.w + 40 && shot.y > -40 && shot.y < world.h + 40;
+  });
+}
+
+function updateShockwaves(dt) {
+  state.shockwaves = state.shockwaves.filter((wave) => {
+    wave.r += wave.speed * dt;
+    wave.ttl -= dt;
+    const d = distance(player, wave);
+    if (!wave.hit && Math.abs(d - wave.r) < 24) {
+      hurtPlayer(wave.damage, "震荡波命中，Boss 正在过载。");
+      wave.hit = true;
+    }
+    return wave.ttl > 0;
+  });
+}
+
+function updateProjectiles(dt) {
+  const world = state.world || { w: W, h: H };
+  state.projectiles = state.projectiles.filter((p) => {
+    const target = findTarget(p);
+    if (target) {
+      const dx = target.x - p.x;
+      const dy = target.y - p.y;
+      const len = Math.hypot(dx, dy) || 1;
+      p.vx = p.vx * 0.88 + (dx / len) * p.speed * 0.12;
+      p.vy = p.vy * 0.88 + (dy / len) * p.speed * 0.12;
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.ttl -= dt;
+    for (const enemy of state.enemies) {
+      if (enemy.hp > 0 && circleHitsRect({ x: p.x, y: p.y, r: p.r }, entityRect(enemy))) {
+        damageTarget(enemy, p.damage);
+        return false;
+      }
+    }
+    if (state.boss && !state.boss.defeated && circleHitsRect({ x: p.x, y: p.y, r: p.r }, bossRect(state.boss))) {
+      damageTarget(state.boss, p.damage);
+      return false;
+    }
+    return p.ttl > 0 && p.x > -30 && p.x < world.w + 30 && p.y > -30 && p.y < world.h + 30;
+  });
+}
+
+function findTarget(p) {
+  const candidates = [...state.enemies.filter((e) => e.hp > 0)];
+  if (state.boss && !state.boss.defeated) candidates.push(state.boss);
+  candidates.sort((a, b) => distance(p, a) - distance(p, b));
+  return candidates[0];
+}
+
+function triggerAttack() {
+  if (!["battle", "boss", "horde"].includes(state.scene) || player.attackCd > 0 || modalOpen()) return;
+  const stats = currentStats();
+  const weapon = stats.weapon || equipments[0];
+  player.attackCd = stats.cooldown;
+  if (weapon.attackType === "circle") doCircleAttack(stats);
+  if (weapon.attackType === "slash") doSlashAttack(stats);
+  if (weapon.attackType === "homing") doHomingAttack(stats, 1);
+  if (weapon.attackType === "burst") doHomingAttack(stats, weapon.projectileCount || 3);
+  if (weapon.attackType === "pierce") doPierceAttack(stats);
+  if (weapon.attackType === "hybrid") {
+    doSlashAttack(stats);
+    doHomingAttack(stats, 2);
+  }
+}
+
+function doCircleAttack(stats) {
+  const attack = { type: "circle", x: player.x, y: player.y, r: stats.reach, ttl: 0.16 };
+  state.attacks.push(attack);
+  damageInCircle(attack, stats.damage);
+}
+
+function doSlashAttack(stats) {
+  const len = Math.hypot(player.faceX, player.faceY) || 1;
+  const nx = player.faceX / len;
+  const ny = player.faceY / len;
+  const attack = { type: "slash", x: player.x + nx * 68, y: player.y + ny * 52, nx, ny, r: stats.reach, ttl: 0.18 };
+  state.attacks.push(attack);
+  for (const target of activeTargets()) {
+    const dx = target.x - player.x;
+    const dy = target.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    const dot = (dx / (dist || 1)) * nx + (dy / (dist || 1)) * ny;
+    if (dist <= stats.reach && dot > 0.28) damageTarget(target, stats.damage + 5);
+  }
+  if (stats.weapon?.bind) bindNearby(stats.weapon.bind, stats.reach * 0.8, stats.damage * 0.25);
+}
+
+function doHomingAttack(stats, count) {
+  const len = Math.hypot(player.faceX, player.faceY) || 1;
+  const nx = player.faceX / len;
+  const ny = player.faceY / len;
+  for (let i = 0; i < count; i += 1) {
+    const spread = (i - (count - 1) / 2) * 0.32;
+    state.projectiles.push({
+      x: player.x + nx * 42,
+      y: player.y + ny * 42,
+      vx: (nx * Math.cos(spread) - ny * Math.sin(spread)) * 360,
+      vy: (ny * Math.cos(spread) + nx * Math.sin(spread)) * 360,
+      speed: 430,
+      r: 11,
+      damage: stats.damage,
+      ttl: 2.6,
+    });
+  }
+  state.attacks.push({ type: "muzzle", x: player.x + nx * 48, y: player.y + ny * 48, r: 34, ttl: 0.12 });
+}
+
+function doPierceAttack(stats) {
+  const len = Math.hypot(player.faceX, player.faceY) || 1;
+  const nx = player.faceX / len;
+  const ny = player.faceY / len;
+  const attack = { type: "pierce", x: player.x, y: player.y, nx, ny, r: stats.reach, ttl: 0.2 };
+  state.attacks.push(attack);
+  for (const target of activeTargets()) {
+    const dx = target.x - player.x;
+    const dy = target.y - player.y;
+    const along = dx * nx + dy * ny;
+    const side = Math.abs(dx * ny - dy * nx);
+    if (along > 0 && along < stats.reach + 80 && side < 42) damageTarget(target, stats.damage + 8);
+  }
+}
+
+function bindNearby(seconds, radius, damage) {
+  state.skillEffects.push({ type: "bind", x: player.x, y: player.y, r: radius, ttl: 0.45 });
+  for (const target of activeTargets()) {
+    if (distance(player, target) < radius) {
+      target.bindTimer = Math.max(target.bindTimer || 0, seconds);
+      damageTarget(target, damage);
+    }
+  }
+}
+
+function activeTargets() {
+  const list = [...state.enemies.filter((e) => e.hp > 0)];
+  if (state.boss && !state.boss.defeated) list.push(state.boss);
+  return list;
+}
+
+function damageInCircle(circle, damage) {
+  for (const target of activeTargets()) {
+    const rect = target === state.boss ? bossRect(target) : entityRect(target);
+    if (circleHitsRect(circle, rect)) damageTarget(target, damage);
+  }
+}
+
+function damageTarget(target, damage) {
+  const finalDamage = Math.max(1, Math.round(damage));
+  target.hp -= finalDamage;
+  target.hitCd = 0.18;
+  if (target === state.boss) {
+    state.bossDamageFloaters.push({
+      x: target.x + rand(-36, 36),
+      y: target.y - target.h * 0.42,
+      value: finalDamage,
+      ttl: 0.72,
+    });
+  }
+  const stats = currentStats();
+  if (target !== state.boss && target.hp <= 0 && stats.lifesteal) heal(stats.lifesteal);
+}
+
+function collectPickups() {
+  const stats = currentStats();
+  state.pickups = state.pickups.filter((p) => {
+    if (distance(player, p) > stats.pickup) return true;
+    if (p.kind === "scrap") {
+      save.scraps[p.id] = (save.scraps[p.id] || 0) + p.amount;
+      save.stats.collected += p.amount;
+      toast(`获得 ${p.name} ×${p.amount}`);
+    } else if (p.kind === "puzzle") {
+      if (state.puzzle) {
+        state.puzzle.held[p.id] = (state.puzzle.held[p.id] || 0) + 1;
+        toast(`拾取分拣样本：${p.name}`);
+      }
+    } else {
+      buffs[p.id]?.apply();
+      toast(`获得增益：${buffs[p.id]?.name || "临时增益"}`);
+    }
+    saveGame();
+    return false;
+  });
+}
+
+function dropLoot(enemy) {
+  const count = 2 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i += 1) {
+    const id = enemy.drop[Math.floor(Math.random() * enemy.drop.length)];
+    spawnPickup(enemy.x + rand(-22, 22), enemy.y + rand(-20, 20), "scrap", id);
+  }
+}
+
+function updateBuffSpawner(dt) {
+  state.buffTimer -= dt;
+  if (state.buffTimer > 0) return;
+  state.buffTimer = state.scene === "boss" ? 5.4 : 6.4;
+  const activeBuffs = state.pickups.filter((p) => p.kind === "buff").length;
+  if (activeBuffs >= 3) return;
+  const point = randomBuffPoint();
+  spawnPickup(point.x, point.y, "buff", randomKey(buffs));
+}
+
+function randomBuffPoint() {
+  const area = state.scene === "boss"
+    ? { minX: 260, maxX: state.world.w - 240, minY: 160, maxY: state.world.h - 180 }
+    : { minX: 220, maxX: state.world.w - 220, minY: 140, maxY: state.world.h - 160 };
+  for (let i = 0; i < 100; i += 1) {
+    const point = { x: rand(area.minX, area.maxX), y: rand(area.minY, area.maxY) };
+    const rect = { x: point.x - 22, y: point.y - 22, w: 44, h: 44 };
+    const blocked = state.obstacles.some((o) => rectsOverlap(rect, o));
+    if (!blocked && distance(point, player) > 120) return point;
+  }
+  return { x: player.x + 90, y: player.y + 70 };
+}
+
+function spawnPickup(x, y, kind, id) {
+  const scrap = scrapTypes.find((s) => s[0] === id);
+  state.pickups.push({
+    x,
+    y,
+    kind,
+    id,
+    amount: kind === "scrap" ? 1 : 0,
+    name: scrap?.[1] || buffs[id]?.name || id,
+    img: kind === "scrap" ? scrap?.[2] : buffs[id]?.img,
+    bob: Math.random() * Math.PI * 2,
+  });
+}
+
+function hurtPlayer(amount, message) {
+  if (player.buffs.invincible) {
+    state.skillEffects.push({ type: "shield", x: player.x, y: player.y, r: 86, ttl: 0.35 });
+    return;
+  }
+  if (player.hurtCd > 0) return;
+  const stats = currentStats();
+  let damage = Math.max(1, Math.round(amount - stats.defense));
+  if (player.shield > 0) {
+    const blocked = Math.min(player.shield, damage);
+    player.shield -= blocked;
+    damage -= blocked;
+  }
+  player.hp -= damage;
+  player.hurtCd = 0.55;
+  if (stats.reflect > 0) {
+    state.skillEffects.push({ type: "reflect", x: player.x, y: player.y, r: 124, ttl: 0.35 });
+    damageInCircle({ x: player.x, y: player.y, r: 124 }, stats.reflect);
+  }
+  if (damage > 0) toast(message);
+  if (player.hp <= 0) {
+    player.hp = Math.ceil(player.maxHp * 0.55);
+    state.wave = 1;
+    enterHub("生命过低，修复站把你拉回主页。碎片已保留，重新整备再出发。");
+  }
+}
+
+function heal(amount) {
+  player.hp = Math.min(player.maxHp, player.hp + amount);
+}
+
+function addShield(amount) {
+  player.shield = Math.min(90, player.shield + amount);
+}
+
+function addBuff(id, seconds) {
+  player.buffs[id] = Math.max(player.buffs[id] || 0, seconds);
+}
+
+function currentSkill() {
+  return skills.find((skill) => skill.id === save.equippedSkill) || skills[0];
+}
+
+function activateSkill() {
+  if (!["battle", "boss", "horde", "puzzle"].includes(state.scene) || modalOpen()) return;
+  const skill = currentSkill();
+  if (!save.unlockedSkills.includes(skill.id)) return toast("先在装备间解锁并选择技能。");
+  if (player.skillCd > 0) return toast(`技能冷却中：${Math.ceil(player.skillCd)}s`);
+  player.skillCd = 20;
+  const baseEffect = { x: player.x, y: player.y, r: 160, ttl: 0.7 };
+  if (skill.effect === "invincible") {
+    addBuff("invincible", 5);
+    state.skillEffects.push({ ...baseEffect, type: "shield", r: 120, ttl: 5 });
+  }
+  if (skill.effect === "screenDamage") {
+    for (const target of activeTargets()) damageTarget(target, 86);
+    state.skillEffects.push({ ...baseEffect, type: "screen", x: player.x, y: player.y, r: 520, ttl: 0.75 });
+  }
+  if (skill.effect === "damageBoost") {
+    addBuff("damageBoost", 8);
+    state.skillEffects.push({ ...baseEffect, type: "power", r: 136, ttl: 8 });
+  }
+  if (skill.effect === "slow") {
+    addBuff("slow", 6);
+    state.skillEffects.push({ ...baseEffect, type: "slow", r: 260, ttl: 6 });
+  }
+  if (skill.effect === "magnet") {
+    addBuff("magnet", 5);
+    state.pickups.forEach((pickup) => {
+      pickup.x = player.x + rand(-40, 40);
+      pickup.y = player.y + rand(-40, 40);
+    });
+    state.skillEffects.push({ ...baseEffect, type: "magnet", r: 240, ttl: 0.8 });
+  }
+  if (skill.effect === "heal") {
+    heal(46);
+    addShield(16);
+    state.skillEffects.push({ ...baseEffect, type: "heal", r: 150, ttl: 1.2 });
+  }
+  if (skill.effect === "freeze") {
+    addBuff("freeze", 3);
+    state.skillEffects.push({ ...baseEffect, type: "freeze", r: 300, ttl: 3 });
+  }
+  if (skill.effect === "barrier") {
+    addShield(42);
+    addBuff("reflect", 5);
+    state.skillEffects.push({ ...baseEffect, type: "shield", r: 138, ttl: 5 });
+  }
+  if (skill.effect === "bind") {
+    bindNearby(4, 260, 22);
+    state.skillEffects.push({ ...baseEffect, type: "bind", r: 260, ttl: 2 });
+  }
+  if (skill.effect === "drone") {
+    addBuff("drone", 6);
+    state.skillEffects.push({ ...baseEffect, type: "drone", r: 180, ttl: 6 });
+  }
+  if (skill.effect === "dash") {
+    const len = Math.hypot(player.faceX, player.faceY) || 1;
+    const nx = player.faceX / len;
+    const ny = player.faceY / len;
+    moveEntity(player, nx * 180, ny * 180, state.obstacles);
+    damageInCircle({ x: player.x, y: player.y, r: 132 }, 52);
+    addBuff("speed", 3);
+    state.skillEffects.push({ ...baseEffect, type: "dash", x: player.x, y: player.y, r: 180, ttl: 0.45 });
+  }
+  if (skill.effect === "reflect") {
+    addBuff("reflect", 7);
+    state.skillEffects.push({ ...baseEffect, type: "reflect", r: 150, ttl: 7 });
+  }
+  toast(`释放技能：${skill.name}`);
+}
+
+function updateSkillAutoFire(dt) {
+  if (!player.buffs.drone || !["battle", "boss", "horde"].includes(state.scene)) return;
+  player.droneTimer = Math.max(0, (player.droneTimer || 0) - dt);
+  if (player.droneTimer > 0) return;
+  player.droneTimer = 0.45;
+  const stats = currentStats();
+  doHomingAttack({ ...stats, damage: Math.max(14, stats.damage * 0.55), reach: 520 }, 1);
+}
+
+function interact() {
+  if (state.scene === "title") {
+    continueGame();
+    return;
+  }
+  if (modalOpen()) return;
+  if (state.scene === "hub" && state.nearby) {
+    state.nearby.action();
+    return;
+  }
+  if (state.scene === "puzzle") {
+    interactPuzzle();
+    return;
+  }
+  if ((state.scene === "battle" || state.scene === "boss" || state.scene === "horde") && state.battlePortal && distance(player, state.battlePortal) < 92) {
+    if (state.scene === "battle") state.wave += 1;
+    enterHub("战斗奖励已保存，已回到主页。");
+  }
+}
+
+function interactPuzzle() {
+  const puzzle = state.puzzle;
+  if (!puzzle || !puzzle.nearby) return;
+  const expected = puzzle.order[puzzle.step];
+  if (puzzle.nearby.id !== expected) {
+    hurtPlayer(5, "投放顺序错误，分拣机触发了轻微电击。");
+    toast(`顺序不对：当前应先处理 ${resourceName(expected)}。`);
+    return;
+  }
+  if ((puzzle.held[expected] || 0) <= 0) {
+    toast(`还缺 ${resourceName(expected)} 样本，先去场地里收集。`);
+    return;
+  }
+  puzzle.held[expected] -= 1;
+  puzzle.step += 1;
+  addShield(8);
+  if (puzzle.step >= puzzle.order.length) {
+    addReward({ token: 2, circuit: 2, coil: 2 });
+    save.stats.collected += 4;
+    saveGame();
+    enterHub("解密回收完成：获得回收章、电路与线圈奖励。");
+  } else {
+    toast(`投放成功，下一步：${resourceName(puzzle.order[puzzle.step])}。`);
+  }
+}
+
+function nextWave() {
+  if (state.scene === "battle" && state.battlePortal && distance(player, state.battlePortal) < 120) {
+    state.wave += 1;
+    startBattle();
+  }
+  if (state.scene === "horde" && state.battlePortal && distance(player, state.battlePortal) < 120) startHorde();
+}
+
+function useMedbay() {
+  if ((save.scraps.token || 0) <= 0 && player.hp < player.maxHp) {
+    toast("修复站需要 1 枚回收章。");
+    return;
+  }
+  if (player.hp < player.maxHp) save.scraps.token = Math.max(0, (save.scraps.token || 0) - 1);
+  player.hp = player.maxHp;
+  addShield(12);
+  saveGame();
+  toast("修复完成，并获得临时护盾。");
+}
+
+function useRecycler() {
+  const candidates = scrapTypes.map(([id]) => id).filter((id) => id !== "token" && (save.scraps[id] || 0) >= 3);
+  if (!candidates.length) {
+    toast("至少需要任意同类碎片 ×3 才能精炼。");
+    return;
+  }
+  const from = candidates[Math.floor(Math.random() * candidates.length)];
+  save.scraps[from] -= 3;
+  save.scraps.token = (save.scraps.token || 0) + 1;
+  saveGame();
+  toast("精炼成功：消耗 3 个碎片，获得 1 枚回收章。");
+}
+
+function showInventory() {
+  const stats = currentStats();
+  const equippedHtml = ["weapon", "helmet", "armor", "boots"]
+    .map((slot) => {
+      const item = getEquip(save.equipped[slot]);
+      return `<div class="slot-pill">${slotName(slot)}：${item ? item.name : "未装备"}</div>`;
+    })
+    .join("");
+  const cards = Object.values(themeConfigs)
+    .map((theme) => {
+      const items = equipments.filter((item) => (item.theme || "electronic") === theme.id);
+      return `
+        <section class="equip-theme-block">
+          <h3>${theme.name}</h3>
+          <div class="modal-grid">
+            ${items
+              .map((item) => {
+                const unlocked = save.unlocked.includes(item.id);
+                const equipped = save.equipped[item.slot] === item.id;
+                return `
+                  <article class="card ${unlocked ? "good" : "locked"}">
+                    <div class="card-title"><img src="${imagePaths[item.img]}" alt="" /><span>${item.name}</span></div>
+                    <p>${item.desc}</p>
+                    <div class="cost-row">${costHtml(item.cost) || '<span class="cost">基础装备</span>'}</div>
+                    <button class="${equipped ? "quiet" : "primary"}" data-action="${unlocked ? "equip" : "unlock"}" data-id="${item.id}">
+                      ${equipped ? "已穿戴" : unlocked ? "穿戴" : "解锁"}
+                    </button>
+                    ${equipped && item.slot !== "weapon" ? `<button class="quiet" data-action="unequip" data-slot="${item.slot}">脱下</button>` : ""}
+                  </article>`;
+              })
+              .join("")}
+          </div>
+        </section>`;
+    })
+    .join("");
+  showModal(
+    `
+    <div class="modal-header">
+      <div>
+        <h2>装备间</h2>
+        <p>独立穿戴界面。武器决定攻击方式：圆圈震荡、前方挥砍、追踪子弹或混合攻击。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="equip-layout">
+      <aside class="equip-paperdoll">
+        ${paperdollHtml()}
+        <div class="slot-row">${equippedHtml}</div>
+        <p>当前：伤害 ${stats.damage} · 冷却 ${stats.cooldown.toFixed(2)}s · 移速 ${Math.round(stats.speed)} · 拾取 ${stats.pickup}</p>
+        <button class="primary" data-action="openSkills">技能训练 / 选择 Q 技能</button>
+      </aside>
+      <div class="equip-theme-list">${cards}</div>
+    </div>
+    <div class="modal-footer">快捷键：E 装备间 · K 技能训练 · Q 战斗技能。小怪碎片解锁装备与技能，Boss 碎片兑换 3D 打印实物。</div>
+  `,
+    "bgLab",
+  );
+}
+
+function paperdollHtml() {
+  const weapon = getEquip(save.equipped.weapon);
+  const helmet = getEquip(save.equipped.helmet);
+  const armor = getEquip(save.equipped.armor);
+  const boots = getEquip(save.equipped.boots);
+  return `
+    <div class="paperdoll-stack">
+      <img class="hero-base" src="${imagePaths.heroFront}" alt="" />
+      ${armor ? `<img class="paper-armor" src="${imagePaths[armor.img]}" alt="" />` : ""}
+      ${helmet ? `<img class="paper-helmet" src="${imagePaths[helmet.img]}" alt="" />` : ""}
+      ${boots ? `<img class="paper-boots" src="${imagePaths[boots.img]}" alt="" />` : ""}
+      ${weapon ? `<img class="paper-weapon" src="${imagePaths[weapon.img]}" alt="" />` : ""}
+    </div>
+  `;
+}
+
+function showSkills() {
+  const current = currentSkill();
+  const cards = skills
+    .map((skill) => {
+      const unlocked = save.unlockedSkills.includes(skill.id);
+      const active = save.equippedSkill === skill.id;
+      return `
+        <article class="card ${unlocked ? "good" : "locked"}">
+          <div class="card-title"><img src="${imagePaths[skill.img]}" alt="" /><span>${skill.name}</span></div>
+          <p>${skill.desc}</p>
+          <div class="cost-row">${costHtml(skill.cost) || '<span class="cost">初始技能</span>'}<span class="cost">CD 20s</span></div>
+          <button class="${active ? "quiet" : "primary"}" data-action="${unlocked ? "selectSkill" : "unlockSkill"}" data-id="${skill.id}">
+            ${active ? "已选择" : unlocked ? "选择" : "解锁"}
+          </button>
+        </article>`;
+    })
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div><h2>技能训练</h2><p>当前技能：${current.name}。战斗中按 Q 释放，所有技能统一 20 秒冷却，适合青少年玩家理解“强效果也要等时机”。</p></div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="modal-grid">${cards}</div>
+    <div class="modal-footer">建议：Boss 用无敌回收罩/慢速分拣，小怪用全屏净化波，尸潮用纸板屏障/织线束缚。</div>
+  `, "bgLab");
+}
+
+function showCraft() {
+  const cards = recipes
+    .map((recipe) => `
+      <article class="card">
+        <div class="card-title"><img src="${imagePaths[recipe.img]}" alt="" /><span>${recipe.name}</span></div>
+        <p>${recipe.desc}</p>
+        <div class="cost-row">${costHtml(recipe.cost)}</div>
+        <p>库存：${save.souvenirs[recipe.id] || 0} · 可兑换公益点：${recipe.points}</p>
+        <button class="primary" data-action="craft" data-id="${recipe.id}">合成</button>
+      </article>`)
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div><h2>收藏品合成</h2><p>小怪模式获得的通用碎片可合成普通纪念品，再兑换公益点。</p></div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="modal-grid">${cards}</div>
+    <div class="modal-footer">快捷键：C 打开合成。</div>
+  `, "bgMarket");
+}
+
+function showExchange() {
+  const normal = recipes
+    .map((recipe) => {
+      const owned = save.souvenirs[recipe.id] || 0;
+      return `
+        <article class="card ${owned ? "good" : "locked"}">
+          <div class="card-title"><img src="${imagePaths[recipe.img]}" alt="" /><span>${recipe.name}</span></div>
+          <p>普通纪念品兑换公益点 +${recipe.points}。</p>
+          <p>库存：${owned}</p>
+          <button class="primary" data-action="exchange" data-id="${recipe.id}" ${owned ? "" : "disabled"}>兑换</button>
+        </article>`;
+    })
+    .join("");
+  const prints = printRewards
+    .map((reward) => `
+      <article class="card warn">
+        <div class="card-title"><img src="${imagePaths[reward.img]}" alt="" /><span>${reward.name}</span></div>
+        <p>${reward.desc}</p>
+        <div class="cost-row">${costHtml(reward.cost)}</div>
+        <p>已兑换：${save.printTickets[reward.id] || 0}</p>
+        <button class="primary" data-action="exchangePrint" data-id="${reward.id}">兑换 3D 打印券</button>
+      </article>`)
+    .join("");
+  const log = save.redeemed.slice(-5).reverse().map((r) => `<span class="cost">${r}</span>`).join("");
+  showModal(`
+    <div class="modal-header">
+      <div><h2>实物兑换台</h2><p>Boss 模式掉落“打印碎片”，可兑换 3D 废物打印纪念品预约券。</p></div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <h3>3D 废物打印兑换</h3>
+    <div class="modal-grid">${prints}</div>
+    <h3>普通纪念品兑换</h3>
+    <div class="modal-grid">${normal}</div>
+    <h3>最近记录</h3>
+    <div class="cost-row">${log || '<span class="cost">还没有兑换记录</span>'}</div>
+    <div class="modal-footer">快捷键：X 打开兑换。当前打印碎片：${save.printShard} · 公益点：${save.points}</div>
+  `, "bgMarket");
+}
+
+function showBackgrounds() {
+  const cards = backgrounds
+    .map((bg) => {
+      const unlocked = save.unlockedBackgrounds.includes(bg.id);
+      const active = save.currentBackground === bg.id;
+      return `
+        <article class="card ${unlocked ? "good" : "locked"}">
+          <div class="card-title"><img src="${imagePaths[bg.img]}" alt="" /><span>${bg.name}</span></div>
+          <p>${bg.desc}</p>
+          <div class="cost-row">${costHtml(bg.cost) || '<span class="cost">默认解锁</span>'}</div>
+          <button class="${active ? "quiet" : "primary"}" data-action="${unlocked ? "selectBg" : "unlockBg"}" data-id="${bg.id}">
+            ${active ? "使用中" : unlocked ? "切换" : "解锁"}
+          </button>
+        </article>`;
+    })
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div><h2>背景终端</h2><p>用碎片解锁主页背景，让装备、兑换等界面也带主题氛围。</p></div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="modal-grid">${cards}</div>
+    <div class="modal-footer">快捷键：B 打开背景选择。Boss 背景需要打印碎片解锁。</div>
+  `, "bgHub");
+}
+
+function showMissions() {
+  const missions = [
+    { id: "collect12", name: "碎片回收员", target: 12, value: save.stats.collected, reward: { token: 2 } },
+    { id: "defeat6", name: "污染清障", target: 6, value: save.stats.defeated, reward: { metal: 4, token: 1 } },
+    { id: "craft1", name: "第一件纪念品", target: 1, value: save.stats.crafted, reward: { battery: 2, coil: 2 } },
+    { id: "boss1", name: "蓝猫守卫净化", target: 1, value: save.stats.bossDefeated, reward: { printShard: 2 } },
+  ];
+  const cards = missions
+    .map((m) => {
+      const done = m.value >= m.target;
+      const claimed = save.claimed[m.id];
+      return `
+        <article class="card ${done ? "good" : "warn"}">
+          <div class="card-title"><img src="${m.id === "boss1" ? imagePaths.bossCat : imagePaths.itemToken}" alt="" /><span>${m.name}</span></div>
+          <p>进度：${Math.min(m.value, m.target)} / ${m.target}</p>
+          <div class="cost-row">${costHtml(m.reward, "奖励")}</div>
+          <button class="primary" data-action="claim" data-id="${m.id}" ${done && !claimed ? "" : "disabled"}>${claimed ? "已领取" : done ? "领取" : "进行中"}</button>
+        </article>`;
+    })
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div><h2>公益任务板</h2><p>任务奖励帮助玩家更快升级装备、解锁背景、兑换 3D 打印纪念品。</p></div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="modal-grid">${cards}</div>
+    <div class="modal-footer">快捷键：M 打开任务。</div>
+  `, "bgHub");
+}
+
+function showMuseum() {
+  const theme = currentTheme();
+  const cards = collectibleCards
+    .filter((item) => item.theme === theme.id)
+    .map((item) => `
+      <article class="collect-card">
+        <div class="collect-art"><img src="${imagePaths[item.img]}" alt="" /></div>
+        <div class="collect-copy">
+          <span class="rarity">${item.rarity}</span>
+          <h3>${item.name}</h3>
+          <p>${item.story.slice(0, 64)}...</p>
+          <button class="primary" data-action="openCollect" data-id="${item.id}">阅读故事</button>
+        </div>
+      </article>`)
+    .join("");
+  const monsters = theme.enemies
+    .slice(0, 8)
+    .map((enemy) => `
+      <article class="card">
+        <div class="card-title"><img src="${imagePaths[enemy.img]}" alt="" /><span>${enemy.name}</span></div>
+        <p>主题污染体。掉落：${enemy.drop.map(resourceName).join("、")}。小怪只掉碎片，buff 会在场地内刷新。</p>
+      </article>`)
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>收藏展馆：${theme.name}</h2>
+        <p>这里展示当前主题的怪物图鉴与卡牌纪念品。每张卡牌都有废品自己的经历，适合做青少年公益课堂里的故事任务。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <h3>卡牌收藏</h3>
+    <div class="collect-grid">${cards}</div>
+    <h3>污染体图鉴</h3>
+    <div class="modal-grid">${monsters}</div>
+    <div class="modal-footer">在传送门切换主题后，展馆会切换到电子、塑料、纸板或布料卡牌。</div>
+  `, "bgMarket");
+}
+
+function showCollectibleStory(id) {
+  const item = collectibleCards.find((card) => card.id === id);
+  if (!item) return;
+  const theme = themeConfigs[item.theme] || currentTheme();
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>${item.name}</h2>
+        <p>${theme.name} · ${item.rarity}</p>
+      </div>
+      <button class="quiet" data-action="showMuseum">返回展馆</button>
+    </div>
+    <article class="story-card">
+      <div class="collect-art large"><img src="${imagePaths[item.img]}" alt="" /></div>
+      <p>${item.story}</p>
+    </article>
+    <div class="modal-footer">卡牌风收藏品用于讲述“它为什么不能乱丢、它还能变成什么”。</div>
+  `, "bgMarket");
+}
+
+function showStory() {
+  const theme = currentTheme();
+  const currentScenes = dialogueScenes
+    .filter((scene) => scene[0] === theme.name || scene[0] === "基地剧情")
+    .concat(dialogueScenes.filter((scene) => scene[0] !== theme.name && scene[0] !== "基地剧情"))
+    .slice(0, 50);
+  const cards = currentScenes
+    .map((scene, index) => `
+      <article class="dialog-card">
+        <img src="${imagePaths[index % 3 === 0 ? theme.preview : index % 3 === 1 ? "heroFront" : "facilityRecycler"]}" alt="" />
+        <div>
+          <strong>${String(index + 1).padStart(2, "0")} · ${scene[0]}</strong>
+          <p><b>废品：</b>${scene[1]}</p>
+          <p><b>我：</b>${scene[2]}</p>
+          <p><b>知识点：</b>${scene[3]}</p>
+        </div>
+      </article>`)
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>剧情导览</h2>
+        <p>${GAME_NAME} 的剧情采用“我与废品对话”的形式。当前主题：${theme.name}；这里优先显示当前主题和基地剧情。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="dialog-list">${cards}</div>
+    <div class="modal-footer">推荐路线：剧情导览 -> 传送门选主题 -> 小怪收集 -> 解密学习 -> 展馆读卡 -> Boss兑换。</div>
+  `, "bgHub");
+}
+
+function claimMission(id) {
+  const map = {
+    collect12: { ok: save.stats.collected >= 12, reward: { token: 2 } },
+    defeat6: { ok: save.stats.defeated >= 6, reward: { metal: 4, token: 1 } },
+    craft1: { ok: save.stats.crafted >= 1, reward: { battery: 2, coil: 2 } },
+    boss1: { ok: save.stats.bossDefeated >= 1, reward: { printShard: 2 } },
+  };
+  const m = map[id];
+  if (!m || !m.ok || save.claimed[id]) return;
+  addReward(m.reward);
+  save.claimed[id] = true;
+  saveGame();
+  showMissions();
+  toast("任务奖励已入库。");
+}
+
+function tryUnlock(id) {
+  const item = getEquip(id);
+  if (!item || save.unlocked.includes(id)) return;
+  if (!canAfford(item.cost)) return toast("材料不足，先去小怪模式收集碎片。");
+  consume(item.cost);
+  save.unlocked.push(id);
+  save.equipped[item.slot] = id;
+  recomputePlayerStats();
+  saveGame();
+  showInventory();
+  toast(`${item.name} 已解锁并穿戴。`);
+}
+
+function unlockSkill(id) {
+  const skill = skills.find((item) => item.id === id);
+  if (!skill || save.unlockedSkills.includes(id)) return;
+  if (!canAfford(skill.cost)) return toast("技能训练材料不足，先去对应主题关卡收集碎片。");
+  consume(skill.cost);
+  save.unlockedSkills.push(id);
+  save.equippedSkill = id;
+  saveGame();
+  showSkills();
+  toast(`${skill.name} 已解锁并选择。`);
+}
+
+function selectSkill(id) {
+  if (!save.unlockedSkills.includes(id)) return;
+  save.equippedSkill = id;
+  saveGame();
+  showSkills();
+  toast(`已选择技能：${currentSkill().name}`);
+}
+
+let dialogueRuntime = { index: 0, step: 0, list: [] };
+
+function galleryCardsForTheme(themeId) {
+  return collectibleCards.filter((item) => item.theme === themeId);
+}
+
+function collectionProgress(themeId) {
+  const cards = galleryCardsForTheme(themeId);
+  const unlocked = cards.filter((card) => isCardUnlocked(card)).length;
+  return { unlocked, total: cards.length };
+}
+
+function isCardUnlocked(card) {
+  if (card.theme === save.currentTheme) return true;
+  const ownedTheme = {
+    electronic: ["circuit", "coil", "battery", "gear", "metal"].some((id) => (save.scraps[id] || 0) > 4),
+    plastic: (save.scraps.plastic || 0) > 4,
+    paper: (save.scraps.paper || 0) > 4,
+    textile: (save.scraps.fabric || 0) > 4,
+  };
+  return Boolean(ownedTheme[card.theme] || save.stats.bossDefeated > 0 || save.points >= 20);
+}
+
+function showMuseum(themeId = save.currentTheme) {
+  const activeTheme = themeConfigs[themeId] || currentTheme();
+  const themeTabs = Object.values(themeConfigs)
+    .map((theme) => {
+      const p = collectionProgress(theme.id);
+      return `<button class="theme-option ${activeTheme.id === theme.id ? "active" : ""}" data-action="showMuseumTheme" data-id="${theme.id}">
+        <img src="${imagePaths[theme.preview]}" alt="" />
+        <span>${theme.name}<small>${p.unlocked}/${p.total}</small></span>
+      </button>`;
+    })
+    .join("");
+  const cards = galleryCardsForTheme(activeTheme.id)
+    .map((item) => {
+      const unlocked = isCardUnlocked(item);
+      return `
+        <article class="collect-card ${unlocked ? "" : "locked-card"}">
+          <div class="collect-art"><img src="${imagePaths[item.img]}" alt="" /></div>
+          <div class="collect-copy">
+            <span class="rarity">${item.rarity}</span>
+            <h3>${item.name}</h3>
+            <p>${unlocked ? item.story.slice(0, 72) + "..." : "未解锁：进入对应主题关卡收集碎片，或完成 Boss / 兑换任务后开放。"}</p>
+            <button class="primary" data-action="openCollect" data-id="${item.id}" ${unlocked ? "" : "disabled"}>${unlocked ? "翻开卡牌" : "未解锁"}</button>
+          </div>
+        </article>`;
+    })
+    .join("");
+  const monsters = activeTheme.enemies
+    .slice(0, 8)
+    .map((enemy, index) => `
+      <article class="monster-entry">
+        <img src="${imagePaths[enemy.img]}" alt="" />
+        <div>
+          <strong>${enemy.name}</strong>
+          <p>掉落：${enemy.drop.map(resourceName).join("、")}。战斗提示：${index % 3 === 0 ? "优先拉开距离。" : index % 3 === 1 ? "用范围攻击清理。" : "用追踪弹稳定输出。"}</p>
+        </div>
+      </article>`)
+    .join("");
+  const p = collectionProgress(activeTheme.id);
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>收藏展馆</h2>
+        <p>${activeTheme.name} · 卡牌 ${p.unlocked}/${p.total}。展馆包含卡牌故事、怪物图鉴、主题设施和兑换指引。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="theme-picker museum-tabs">${themeTabs}</div>
+    <section class="museum-layout">
+      <div>
+        <h3>纪念品卡牌</h3>
+        <div class="collect-grid">${cards}</div>
+      </div>
+      <aside class="museum-side">
+        <h3>污染体图鉴</h3>
+        <div class="monster-list">${monsters}</div>
+        <h3>兑换目标</h3>
+        <p>小怪碎片用于装备、技能、普通纪念品；Boss 打印碎片用于 3D 废物打印实物券。</p>
+      </aside>
+    </section>
+    <div class="modal-footer">提示：传送门切换主题会影响关卡敌人；展馆可提前查看所有主题，但部分卡牌需要碎片进度解锁。</div>
+  `, "bgMarket");
+}
+
+function showCollectibleStory(id) {
+  const item = collectibleCards.find((card) => card.id === id);
+  if (!item) return;
+  const theme = themeConfigs[item.theme] || currentTheme();
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>${item.name}</h2>
+        <p>${theme.name} · ${item.rarity}</p>
+      </div>
+      <button class="quiet" data-action="showMuseumTheme" data-id="${theme.id}">返回展馆</button>
+    </div>
+    <article class="card-detail">
+      <div class="collect-art large"><img src="${imagePaths[item.img]}" alt="" /></div>
+      <div>
+        <span class="rarity">${item.rarity}</span>
+        <p>${item.story}</p>
+        <div class="card-lore-note">课堂提问：这个废品为什么不能混投？它被重新设计成纪念品后，故事发生了什么变化？</div>
+      </div>
+    </article>
+  `, "bgMarket");
+}
+
+function storyPortraitFor(scene, index) {
+  if (scene[0] === "基地剧情") return index % 2 ? "facilityBoard" : "heroFront";
+  const theme = Object.values(themeConfigs).find((t) => t.name === scene[0]) || currentTheme();
+  const monster = theme.enemies[index % theme.enemies.length];
+  return monster?.img || theme.preview;
+}
+
+function startDialogue(index = 0) {
+  const theme = currentTheme();
+  const themed = dialogueScenes.filter((scene) => scene[0] === theme.name || scene[0] === "基地剧情");
+  const others = dialogueScenes.filter((scene) => scene[0] !== theme.name && scene[0] !== "基地剧情");
+  dialogueRuntime = { index: clamp(index, 0, 49), step: 0, list: themed.concat(others).slice(0, 50) };
+  renderDialogue();
+}
+
+function renderDialogue() {
+  const scene = dialogueRuntime.list[dialogueRuntime.index] || dialogueRuntime.list[0];
+  if (!scene) return;
+  const portrait = storyPortraitFor(scene, dialogueRuntime.index);
+  const lines = [
+    { speaker: scene[0] === "基地剧情" ? "基地引导员" : scene[0] + "污染体", text: scene[1] },
+    { speaker: "我", text: scene[2] },
+    { speaker: "知识提示", text: scene[3] },
+  ];
+  const line = lines[dialogueRuntime.step] || lines[0];
+  const choices = dialogueRuntime.step === 0
+    ? `<button class="choice-btn" data-action="dialogueStep">回应它</button><button class="choice-btn" data-action="startDialogue" data-id="${(dialogueRuntime.index + 1) % dialogueRuntime.list.length}">跳到下一段</button>`
+    : dialogueRuntime.step === 1
+      ? `<button class="choice-btn" data-action="dialogueStep">查看知识点</button><button class="choice-btn" data-action="dialogueBack">重新听废品说</button>`
+      : `<button class="choice-btn" data-action="startDialogue" data-id="${(dialogueRuntime.index + 1) % dialogueRuntime.list.length}">下一段对话</button><button class="choice-btn" data-action="showStoryList">返回剧本目录</button>`;
+  showModal(`
+    <div class="dialogue-stage">
+      <div class="dialogue-topbar">
+        <span>剧情 ${dialogueRuntime.index + 1}/50 · ${scene[0]}</span>
+        <button class="quiet" data-action="close">关闭 Esc</button>
+      </div>
+      <div class="dialogue-scene">
+        <div class="dialogue-portrait"><img src="${imagePaths[portrait]}" alt="" /></div>
+        <div class="dialogue-box">
+          <strong>${line.speaker}</strong>
+          <p>${line.text}</p>
+          <div class="dialogue-choices">${choices}</div>
+        </div>
+      </div>
+    </div>
+  `, "bgHub");
+}
+
+function showStory() {
+  const theme = currentTheme();
+  const themed = dialogueScenes.filter((scene) => scene[0] === theme.name || scene[0] === "基地剧情");
+  const others = dialogueScenes.filter((scene) => scene[0] !== theme.name && scene[0] !== "基地剧情");
+  const list = themed.concat(others).slice(0, 50);
+  const entries = list
+    .map((scene, index) => `
+      <button class="story-entry" data-action="startDialogue" data-id="${index}">
+        <img src="${imagePaths[storyPortraitFor(scene, index)]}" alt="" />
+        <span><b>${String(index + 1).padStart(2, "0")} · ${scene[0]}</b><small>${scene[1]}</small></span>
+      </button>`)
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>剧情对话</h2>
+        <p>采用类似 RPG 的对话窗口：先听废品怪物发言，再选择回应，最后显示知识点。当前主题 ${theme.name} 的剧情会排在前面。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="story-actions">
+      <button class="primary" data-action="startDialogue" data-id="0">开始当前主题第一段</button>
+      <button class="quiet" data-action="startDialogue" data-id="10">基地剧情</button>
+    </div>
+    <div class="story-list">${entries}</div>
+    <div class="modal-footer">Enter 靠近剧情导览打开。对话不用动画，重点是让废品“开口说话”，玩家通过选择学习分类知识。</div>
+  `, "bgHub");
+}
+
+function showStoryList() {
+  showStory();
+}
+
+function itemEffectTags(item) {
+  const tags = [slotName(item.slot)];
+  if (item.attackType) tags.push({
+    circle: "范围震荡",
+    slash: "弧形挥砍",
+    homing: "追踪子弹",
+    hybrid: "混合攻击",
+    burst: "多弹追踪",
+    pierce: "穿透直线",
+  }[item.attackType] || item.attackType);
+  if (item.reflect) tags.push(`反伤 ${item.reflect}`);
+  if (item.bind) tags.push(`束缚 ${item.bind}s`);
+  if (item.lifesteal) tags.push(`击败回血 ${item.lifesteal}`);
+  if (item.cooldownBoost) tags.push("冷却缩短");
+  if (item.pickup) tags.push(`拾取 +${item.pickup}`);
+  if (item.shield) tags.push(`护盾 +${item.shield}`);
+  if (item.hp) tags.push(`生命 +${item.hp}`);
+  if (item.speed) tags.push(`速度 +${item.speed}`);
+  return tags.map((tag) => `<span class="cost">${tag}</span>`).join("");
+}
+
+function themeSuitDesc(themeId) {
+  return {
+    electronic: "电子套装偏追踪、电磁弹和稳定护盾，适合 Boss 与远距离输出。",
+    plastic: "塑料套装偏多弹、拾取范围和机动性，适合小怪清理与材料收集。",
+    paper: "纸板套装偏穿透、反伤和冷却缩短，适合尸潮与密集敌人。",
+    textile: "布料套装偏缠绕、回复和持续作战，适合长时间推进。",
+  }[themeId] || "";
+}
+
+function showInventory() {
+  const stats = currentStats();
+  const slotCards = ["weapon", "helmet", "armor", "boots"]
+    .map((slot) => {
+      const item = getEquip(save.equipped[slot]);
+      return `<article class="equip-slot-card">
+        <span>${slotName(slot)}</span>
+        ${item ? `<img src="${imagePaths[item.img]}" alt="" /><strong>${item.name}</strong><small>${itemEffectTags(item)}</small>` : `<strong>未装备</strong>`}
+      </article>`;
+    })
+    .join("");
+  const themeSections = Object.values(themeConfigs)
+    .map((theme) => {
+      const items = equipments.filter((item) => (item.theme || "electronic") === theme.id);
+      const owned = items.filter((item) => save.unlocked.includes(item.id)).length;
+      return `<section class="equip-theme-block">
+        <div class="equip-theme-head">
+          <div><h3>${theme.name}套装</h3><p>${themeSuitDesc(theme.id)}</p></div>
+          <span class="rarity">${owned}/${items.length}</span>
+        </div>
+        <div class="modal-grid">
+          ${items
+            .map((item) => {
+              const unlocked = save.unlocked.includes(item.id);
+              const equipped = save.equipped[item.slot] === item.id;
+              return `<article class="card ${unlocked ? "good" : "locked"}">
+                <div class="card-title"><img src="${imagePaths[item.img]}" alt="" /><span>${item.name}</span></div>
+                <div class="cost-row">${itemEffectTags(item)}</div>
+                <p>${item.desc}</p>
+                <div class="cost-row">${costHtml(item.cost) || '<span class="cost">基础装备</span>'}</div>
+                <button class="${equipped ? "quiet" : "primary"}" data-action="${unlocked ? "equip" : "unlock"}" data-id="${item.id}">${equipped ? "已穿戴" : unlocked ? "穿戴" : "解锁"}</button>
+                ${equipped && item.slot !== "weapon" ? `<button class="quiet" data-action="unequip" data-slot="${item.slot}">脱下</button>` : ""}
+              </article>`;
+            })
+            .join("")}
+        </div>
+      </section>`;
+    })
+    .join("");
+  showModal(`
+    <div class="modal-header">
+      <div>
+        <h2>装备间</h2>
+        <p>四个废物主题对应四套装备方向。装备效果会真实影响战斗：追踪、多弹、穿透、反伤、缠绕、回血、冷却与拾取范围。</p>
+      </div>
+      <button class="quiet" data-action="close">关闭 Esc</button>
+    </div>
+    <div class="equip-layout">
+      <aside class="equip-paperdoll">
+        ${paperdollHtml()}
+        <div class="equip-slot-grid">${slotCards}</div>
+        <div class="stat-panel">
+          <span>伤害 ${stats.damage}</span><span>冷却 ${stats.cooldown.toFixed(2)}s</span><span>移速 ${Math.round(stats.speed)}</span><span>拾取 ${stats.pickup}</span>
+        </div>
+        <button class="primary" data-action="openSkills">技能训练 / 选择 Q 技能</button>
+      </aside>
+      <div class="equip-theme-list">${themeSections}</div>
+    </div>
+    <div class="modal-footer">建议先按当前关卡主题解锁一套，再混搭：电子武器 + 纸板护甲 + 布料鞋也可以成立。</div>
+  `, "bgLab");
+}
+
+function equip(id) {
+  const item = getEquip(id);
+  if (!item || !save.unlocked.includes(id)) return;
+  save.equipped[item.slot] = id;
+  recomputePlayerStats();
+  saveGame();
+  showInventory();
+}
+
+function unequip(slot) {
+  if (slot === "weapon") return;
+  save.equipped[slot] = "";
+  recomputePlayerStats();
+  saveGame();
+  showInventory();
+}
+
+function craft(id) {
+  const recipe = recipes.find((r) => r.id === id);
+  if (!recipe) return;
+  if (!canAfford(recipe.cost)) return toast("碎片不足，无法合成。");
+  consume(recipe.cost);
+  save.souvenirs[id] = (save.souvenirs[id] || 0) + 1;
+  save.stats.crafted += 1;
+  saveGame();
+  showCraft();
+  toast(`${recipe.name} 合成完成。`);
+}
+
+function exchange(id) {
+  const recipe = recipes.find((r) => r.id === id);
+  if (!recipe || (save.souvenirs[id] || 0) <= 0) return;
+  save.souvenirs[id] -= 1;
+  save.points += recipe.points;
+  save.redeemed.push(`${recipe.name} -> 公益点 +${recipe.points}`);
+  saveGame();
+  showExchange();
+  toast("普通纪念品兑换完成。");
+}
+
+function exchangePrint(id) {
+  const reward = printRewards.find((r) => r.id === id);
+  if (!reward) return;
+  if (!canAfford(reward.cost)) return toast("打印碎片不足，挑战 Boss 可获得。");
+  consume(reward.cost);
+  save.printTickets[id] = (save.printTickets[id] || 0) + 1;
+  save.points += reward.points;
+  save.redeemed.push(`${reward.name} -> 3D 打印券 +1`);
+  saveGame();
+  showExchange();
+  toast("3D 废物打印兑换券已生成。");
+}
+
+function unlockBg(id) {
+  const bg = backgrounds.find((b) => b.id === id);
+  if (!bg || save.unlockedBackgrounds.includes(id)) return;
+  if (!canAfford(bg.cost)) return toast("解锁背景的碎片不足。");
+  consume(bg.cost);
+  save.unlockedBackgrounds.push(id);
+  save.currentBackground = id;
+  saveGame();
+  showBackgrounds();
+  toast(`${bg.name} 已解锁并切换。`);
+}
+
+function selectBg(id) {
+  if (!save.unlockedBackgrounds.includes(id)) return;
+  save.currentBackground = id;
+  saveGame();
+  showBackgrounds();
+  toast("主页背景已切换。");
+}
+
+function canAfford(cost) {
+  return Object.entries(cost || {}).every(([key, val]) => getResource(key) >= val);
+}
+
+function consume(cost) {
+  for (const [key, val] of Object.entries(cost || {})) {
+    if (key === "printShard") save.printShard -= val;
+    else save.scraps[key] -= val;
+  }
+}
+
+function addReward(reward) {
+  for (const [key, val] of Object.entries(reward || {})) {
+    if (key === "printShard") save.printShard += val;
+    else save.scraps[key] = (save.scraps[key] || 0) + val;
+  }
+}
+
+function getResource(key) {
+  if (key === "printShard") return save.printShard || 0;
+  return save.scraps[key] || 0;
+}
+
+function costHtml(cost, label = "") {
+  return Object.entries(cost || {})
+    .map(([key, val]) => `<span class="cost">${label ? `${label}: ` : ""}${resourceName(key)} ×${val}</span>`)
+    .join("");
+}
+
+function resourceName(key) {
+  if (key === "printShard") return "打印碎片";
+  return scrapTypes.find((s) => s[0] === key)?.[1] || key;
+}
+
+function slotName(slot) {
+  return { weapon: "武器", helmet: "头盔", armor: "护甲", boots: "靴子" }[slot] || slot;
+}
+
+function showModal(html, bgKey = "bgHub") {
+  state.paused = true;
+  toastEl.classList.add("hidden");
+  modal.innerHTML = html;
+  const bg = imagePaths[bgKey] || imagePaths.bgHub;
+  modal.style.backgroundImage = `linear-gradient(135deg, rgba(247,255,238,0.97), rgba(222,255,240,0.94)), url("${bg}")`;
+  modal.classList.remove("hidden");
+}
+
+function closeModal() {
+  state.paused = false;
+  modal.classList.add("hidden");
+  modal.innerHTML = "";
+}
+
+function modalOpen() {
+  return !modal.classList.contains("hidden");
+}
+
+function updateHud() {
+  hpText.textContent = `HP ${Math.ceil(player.hp)}/${player.maxHp}`;
+  if (hpFill) hpFill.style.width = `${clamp(player.hp / player.maxHp, 0, 1) * 100}%`;
+  shieldText.textContent = `护盾 ${Math.ceil(player.shield)}/90`;
+  if (shieldFill) shieldFill.style.width = `${clamp(player.shield / 90, 0, 1) * 100}%`;
+  pointText.textContent = `公益点 ${save.points}`;
+  printText.textContent = `打印碎片 ${save.printShard}`;
+  scrapRow.innerHTML = scrapTypes
+    .map(([id, name, img]) => `<span class="scrap-chip"><img src="${imagePaths[img]}" alt="" />${name} ${save.scraps[id] || 0}</span>`)
+    .join("");
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  if (!assetsReady) return drawLoading();
+  if (state.scene === "title") {
+    drawBg(imgs.bgHub);
+    return;
+  }
+  if (state.scene === "hub") drawHub();
+  if (state.scene === "battle") drawBattle();
+  if (state.scene === "boss") drawBossBattle();
+  if (state.scene === "horde") drawHorde();
+  if (state.scene === "puzzle") drawPuzzle();
+  drawPrompt();
+}
+
+function drawLoading() {
+  ctx.fillStyle = "#dff7ff";
+  ctx.fillRect(0, 0, W, H);
+  drawGameText("正在整理回收站素材...", 420, 350, 34, "#10232d");
+}
+
+function currentHubBg() {
+  const bg = backgrounds.find((b) => b.id === save.currentBackground) || backgrounds[0];
+  return imgs[bg.img] || imgs.bgHub;
+}
+
+function drawHub() {
+  drawBg(currentHubBg());
+  drawWalkableGlow();
+  for (const f of hubFacilities) drawFacility(f);
+  drawPlayer();
+  if (state.nearby) drawMarker(state.nearby.x, state.nearby.y - state.nearby.h / 2 - 18, "Enter");
+}
+
+function drawBattle() {
+  const map = currentMap();
+  drawWorldBg(imgs[map.img], map);
+  ctx.save();
+  ctx.translate(-state.camera.x, -state.camera.y);
+  drawArenaBounds(map.accent || "#ffd861");
+  for (const obstacle of state.obstacles) drawObstacle(obstacle);
+  for (const trap of state.traps) drawTrap(trap);
+  drawPickupsAndCombat();
+  if (state.battlePortal) drawBattlePortal();
+  for (const enemy of state.enemies) drawEnemy(enemy);
+  drawPlayer();
+  drawSkillWorldEffects();
+  ctx.restore();
+  drawSkillHud();
+}
+
+function drawHorde() {
+  drawBattle();
+  ctx.save();
+  ctx.fillStyle = "rgba(9, 27, 38, 0.78)";
+  ctx.strokeStyle = "#ffd861";
+  ctx.lineWidth = 3;
+  roundedRect(470, 170, 340, 54, 8, true);
+  roundedRect(470, 170, 340, 54, 8, false);
+  drawGameText(`尸潮 ${Math.ceil(state.hordeTime)}s  击败 ${state.hordeKills}/36`, 492, 205, 22, "#f7fff1", false);
+  ctx.restore();
+}
+
+function drawPuzzle() {
+  const map = currentMap();
+  drawWorldBg(imgs[map.img], map);
+  ctx.save();
+  ctx.translate(-state.camera.x, -state.camera.y);
+  drawArenaBounds("#75ff9f");
+  for (const obstacle of state.obstacles) drawObstacle(obstacle);
+  drawPickupsAndCombat();
+  const puzzle = state.puzzle;
+  if (puzzle) {
+    for (const station of puzzle.stations) drawPuzzleStation(station, station.id === puzzle.order[puzzle.step]);
+  }
+  drawPlayer();
+  drawSkillWorldEffects();
+  ctx.restore();
+  if (puzzle) drawPuzzleHud(puzzle);
+  drawSkillHud();
+}
+
+function drawPuzzleStation(station, active) {
+  drawSprite(imgs[station.img], station.x, station.y, active ? 84 : 72, active ? 84 : 72);
+  ctx.save();
+  ctx.strokeStyle = active ? "#ffd861" : "rgba(117,255,159,0.55)";
+  ctx.lineWidth = active ? 5 : 3;
+  ctx.beginPath();
+  ctx.arc(station.x, station.y, active ? 56 : 48, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  if (distance(player, station) < 86) drawMarker(station.x, station.y - 70, "Enter");
+}
+
+function drawPuzzleHud(puzzle) {
+  const next = puzzle.order[puzzle.step];
+  ctx.save();
+  ctx.fillStyle = "rgba(9, 27, 38, 0.8)";
+  ctx.strokeStyle = "#75ff9f";
+  ctx.lineWidth = 3;
+  roundedRect(390, 170, 500, 58, 8, true);
+  roundedRect(390, 170, 500, 58, 8, false);
+  drawGameText(`解密 ${puzzle.step + 1}/${puzzle.order.length}: ${resourceName(next)}  携带 ${puzzle.held[next] || 0}`, 416, 208, 22, "#f7fff1", false);
+  ctx.restore();
+}
+
+function drawBossBattle() {
+  const map = currentMap();
+  drawWorldBg(imgs[map.img], map);
+  ctx.save();
+  ctx.translate(-state.camera.x, -state.camera.y);
+  ctx.fillStyle = "rgba(6, 20, 31, 0.28)";
+  ctx.fillRect(0, 0, state.world.w, state.world.h);
+  drawArenaBounds("#30e4e0");
+  drawBossFloor();
+  for (const obstacle of state.obstacles) drawObstacle(obstacle);
+  drawPickupsAndCombat();
+  for (const enemy of state.enemies) drawEnemy(enemy);
+  if (state.boss) drawBoss(state.boss);
+  if (state.battlePortal) drawBattlePortal();
+  drawPlayer();
+  drawSkillWorldEffects();
+  drawBossDamageFloaters();
+  ctx.restore();
+  if (state.boss && !state.boss.defeated) drawBossHud(state.boss);
+  drawSkillHud();
+}
+
+function drawPickupsAndCombat() {
+  for (const pickup of state.pickups) drawPickup(pickup);
+  for (const shot of state.enemyShots) drawEnemyShot(shot);
+  for (const wave of state.shockwaves) drawShockwave(wave);
+  for (const projectile of state.projectiles) drawProjectile(projectile);
+  for (const attack of state.attacks) drawAttack(attack);
+}
+
+function drawBg(img) {
+  ctx.fillStyle = "#c9eddc";
+  ctx.fillRect(0, 0, W, H);
+  if (!img) return;
+  const scale = Math.max(W / img.width, H / img.height);
+  const sw = W / scale;
+  const sh = H / scale;
+  const sx = (img.width - sw) / 2;
+  const sy = (img.height - sh) / 2;
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawWorldBg(img, map) {
+  ctx.fillStyle = "#c9eddc";
+  ctx.fillRect(0, 0, W, H);
+  const world = state.world || { w: W, h: H };
+  ctx.save();
+  ctx.translate(-state.camera.x, -state.camera.y);
+  if (img) {
+    const tileW = 640;
+    const tileH = 360;
+    for (let x = -tileW; x < world.w + tileW; x += tileW) {
+      for (let y = -tileH; y < world.h + tileH; y += tileH) {
+        ctx.drawImage(img, 0, 0, img.width, img.height, x, y, tileW, tileH);
+      }
+    }
+  } else {
+    ctx.fillStyle = "#c9eddc";
+    ctx.fillRect(0, 0, world.w, world.h);
+  }
+  ctx.fillStyle = map?.tint || "rgba(255,255,255,0.08)";
+  ctx.fillRect(0, 0, world.w, world.h);
+  drawMapGrid(world, map?.accent || "#75ff9f");
+  ctx.restore();
+}
+
+function drawMapGrid(world, color) {
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  for (let x = 80; x < world.w; x += 160) {
+    ctx.beginPath();
+    ctx.moveTo(x, 82);
+    ctx.lineTo(x, world.h - 82);
+    ctx.stroke();
+  }
+  for (let y = 80; y < world.h; y += 160) {
+    ctx.beginPath();
+    ctx.moveTo(82, y);
+    ctx.lineTo(world.w - 82, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawWalkableGlow() {
+  ctx.fillStyle = "rgba(229,255,240,0.36)";
+  roundedRect(86, 256, 1096, 382, 18, true);
+}
+
+function drawArenaBounds(color) {
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = 4;
+  const world = cameraScene() ? state.world : { w: W, h: H };
+  ctx.strokeRect(44, 68, world.w - 88, world.h - 104);
+  ctx.globalAlpha = 1;
+}
+
+function drawBossFloor() {
+  ctx.save();
+  const boss = state.boss || { x: 840, y: 365 };
+  ctx.translate(boss.x, boss.y + 16);
+  for (let i = 0; i < 4; i += 1) {
+    ctx.strokeStyle = i % 2 ? "rgba(48,228,224,0.28)" : "rgba(70,213,122,0.32)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 108 + i * 42 + Math.sin(performance.now() / 420) * 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawFacility(f) {
+  drawSprite(imgs[f.img], f.x, f.y, f.w, f.h);
+  drawFacilityLabel(f);
+}
+
+function drawFacilityLabel(f) {
+  ctx.save();
+  ctx.font = "950 15px 'Microsoft YaHei UI', sans-serif";
+  const text = f.name;
+  const width = Math.min(116, ctx.measureText(text).width + 18);
+  const x = f.x - width / 2;
+  const y = f.y + f.h / 2 + 8;
+  ctx.fillStyle = "rgba(247,255,238,0.94)";
+  ctx.strokeStyle = "#10232d";
+  ctx.lineWidth = 3;
+  roundedRect(x, y, width, 26, 6, true);
+  roundedRect(x, y, width, 26, 6, false);
+  ctx.fillStyle = "#10232d";
+  ctx.fillText(text, x + 9, y + 18);
+  ctx.restore();
+}
+
+function drawObstacle(o) {
+  ctx.fillStyle = "rgba(15, 35, 45, 0.22)";
+  ctx.fillRect(o.x, o.y, o.w, o.h);
+  ctx.strokeStyle = "rgba(255,216,97,0.86)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(o.x, o.y, o.w, o.h);
+}
+
+function drawTrap(t) {
+  drawSprite(imgs[t.img], t.x, t.y, t.w, t.h);
+  if (t.cd > 0) {
+    ctx.fillStyle = "rgba(240,82,95,0.24)";
+    const r = trapRect(t);
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+  }
+}
+
+function drawPickup(p) {
+  const y = p.y + Math.sin(performance.now() / 240 + p.bob) * 5;
+  drawSprite(imgs[p.img], p.x, y, p.kind === "buff" ? 42 : 36, p.kind === "buff" ? 42 : 36);
+}
+
+function drawBattlePortal() {
+  const idx = Math.floor(performance.now() / 120) % 8;
+  drawSprite(imgs[`portal${idx}`], state.battlePortal.x, state.battlePortal.y, 128, 128);
+}
+
+function drawEnemy(enemy) {
+  if (enemy.hitCd > 0) ctx.globalAlpha = 0.72;
+  drawSprite(imgs[enemy.img], enemy.x, enemy.y, enemy.w, enemy.h);
+  ctx.globalAlpha = 1;
+  drawBar(enemy.x - 34, enemy.y - enemy.h / 2 - 14, 68, 8, enemy.hp / enemy.maxHp, "#f0525f");
+}
+
+function drawBoss(boss) {
+  const pulse = Math.sin(performance.now() / 180) * 7;
+  if (boss.hitCd > 0) ctx.globalAlpha = 0.7;
+  drawSprite(imgs.bossCat, boss.x, boss.y + pulse * 0.2, boss.w, boss.h);
+  ctx.globalAlpha = 1;
+}
+
+function drawBossHud(boss) {
+  const pct = clamp(boss.hp / boss.maxHp, 0, 1);
+  const portraitUi = canvas.clientHeight > canvas.clientWidth * 1.3;
+  const w = 590;
+  const h = 54;
+  const x = W / 2 - w / 2;
+  const y = portraitUi ? 416 : 478;
+  ctx.save();
+  ctx.fillStyle = "rgba(9, 27, 38, 0.86)";
+  ctx.strokeStyle = "#f7fff1";
+  ctx.lineWidth = 3;
+  roundedRect(x, y, w, h, 8, true);
+  roundedRect(x, y, w, h, 8, false);
+  drawGameText(`${boss.name}  Phase ${boss.phase}  ${Math.ceil(pct * 100)}%`, x + 18, y + 22, 18, "#f7fff1", false);
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  roundedRect(x + 18, y + 30, w - 36, 14, 5, true);
+  const grd = ctx.createLinearGradient(x + 18, y, x + w - 18, y);
+  grd.addColorStop(0, boss.phase >= 3 ? "#f0525f" : "#30e4e0");
+  grd.addColorStop(1, boss.phase >= 3 ? "#ffd861" : "#75ff9f");
+  ctx.fillStyle = grd;
+  roundedRect(x + 18, y + 30, (w - 36) * pct, 14, 5, true);
+  ctx.restore();
+}
+
+function drawBossDamageFloaters() {
+  for (const floater of state.bossDamageFloaters) {
+    ctx.globalAlpha = clamp(floater.ttl / 0.72, 0, 1);
+    drawGameText(`-${floater.value}`, floater.x, floater.y, 22, "#ffd861");
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawEnemyShot(shot) {
+  ctx.fillStyle = "#33f1ff";
+  ctx.strokeStyle = "#10232d";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(shot.x, shot.y, shot.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawShockwave(wave) {
+  ctx.strokeStyle = "rgba(255,216,97,0.8)";
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.arc(wave.x, wave.y, wave.r, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawProjectile(p) {
+  ctx.fillStyle = "#75ff9f";
+  ctx.strokeStyle = "#10232d";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawAttack(a) {
+  if (a.type === "circle" || a.type === "muzzle") {
+    ctx.strokeStyle = a.type === "muzzle" ? "rgba(117,255,159,0.9)" : "rgba(48,228,224,0.9)";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.r * (0.8 + a.ttl), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (a.type === "slash") {
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(Math.atan2(a.ny, a.nx));
+    const grd = ctx.createLinearGradient(-20, -45, 130, 45);
+    grd.addColorStop(0, "rgba(255,255,255,0)");
+    grd.addColorStop(0.35, "rgba(255,216,97,0.92)");
+    grd.addColorStop(1, "rgba(48,228,224,0.62)");
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(-24, -54);
+    ctx.quadraticCurveTo(102, -74, 150, 0);
+    ctx.quadraticCurveTo(102, 74, -24, 54);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  if (a.type === "pierce") {
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(Math.atan2(a.ny, a.nx));
+    ctx.fillStyle = "rgba(255,255,255,0.74)";
+    ctx.strokeStyle = "rgba(48,228,224,0.9)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(18, -20);
+    ctx.lineTo(a.r + 80, 0);
+    ctx.lineTo(18, 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawSkillWorldEffects() {
+  for (const effect of state.skillEffects) {
+    const pct = clamp(effect.ttl / (effect.type === "shield" ? 5 : effect.type === "power" ? 8 : effect.type === "reflect" ? 7 : 1), 0, 1);
+    ctx.save();
+    if (effect.type === "shield") {
+      ctx.strokeStyle = "rgba(117,255,159,0.8)";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r + Math.sin(performance.now() / 130) * 7, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "screen") {
+      ctx.strokeStyle = "rgba(255,216,97,0.82)";
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r * (1.1 - pct * 0.35), 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "power") {
+      ctx.strokeStyle = "rgba(255,82,126,0.72)";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r + Math.sin(performance.now() / 90) * 10, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "slow" || effect.type === "freeze") {
+      ctx.strokeStyle = effect.type === "freeze" ? "rgba(125,229,255,0.82)" : "rgba(127,139,255,0.7)";
+      ctx.lineWidth = 6;
+      ctx.setLineDash([18, 10]);
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "magnet" || effect.type === "bind") {
+      ctx.strokeStyle = effect.type === "magnet" ? "rgba(48,228,224,0.76)" : "rgba(70,213,122,0.8)";
+      ctx.lineWidth = 6;
+      for (let i = 0; i < 4; i += 1) {
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.r - i * 38 + Math.sin(performance.now() / 120) * 8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (effect.type === "heal") {
+      ctx.fillStyle = "rgba(117,255,159,0.22)";
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r * (1.2 - pct * 0.2), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (effect.type === "dash") {
+      ctx.strokeStyle = "rgba(255,216,97,0.9)";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r * pct, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "reflect") {
+      ctx.strokeStyle = "rgba(255,248,218,0.92)";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "drone") {
+      const angle = performance.now() / 220;
+      drawSprite(imgs.facilityTerminal, effect.x + Math.cos(angle) * 78, effect.y + Math.sin(angle) * 50 - 52, 42, 42);
+    }
+    ctx.restore();
+  }
+}
+
+function drawSkillHud() {
+  const skill = currentSkill();
+  const ready = player.skillCd <= 0;
+  ctx.save();
+  const x = W - 252;
+  const y = H - 122;
+  ctx.fillStyle = ready ? "rgba(232,255,240,0.94)" : "rgba(245,248,255,0.86)";
+  ctx.strokeStyle = "#10232d";
+  ctx.lineWidth = 4;
+  roundedRect(x, y, 220, 52, 8, true);
+  roundedRect(x, y, 220, 52, 8, false);
+  drawSprite(imgs[skill.img], x + 28, y + 26, 36, 36);
+  drawGameText(`Q ${skill.name}`, x + 54, y + 23, 16, "#10232d", false);
+  drawGameText(ready ? "可释放" : `冷却 ${Math.ceil(player.skillCd)}s`, x + 54, y + 43, 15, ready ? "#14834d" : "#b1424d", false);
+  ctx.restore();
+}
+
+function drawPlayer() {
+  let img = imgs.heroFront;
+  const moving = Boolean(movementVector().dx || movementVector().dy);
+  const step = Math.floor(player.frame * 8) % 2;
+  if (player.dir.includes("up")) img = imgs.heroBack || imgs.heroWalkBack1;
+  else if (player.dir.includes("down")) img = moving ? (step ? imgs.heroWalkFront1 : imgs.heroWalkFront2) : imgs.heroFront;
+  if (player.dir === "right" || player.dir === "left" || player.dir === "up-right" || player.dir === "up-left" || player.dir === "down-right" || player.dir === "down-left") {
+    img = player.dir.includes("up") ? (imgs.heroBack || img) : step ? imgs.heroWalkRight1 : imgs.heroWalkRight2;
+  }
+  if (player.hurtCd > 0 && Math.floor(player.hurtCd * 20) % 2 === 0) ctx.globalAlpha = 0.5;
+  ctx.save();
+  if (player.dir.includes("left")) {
+    ctx.translate(player.x, player.y);
+    ctx.scale(-1, 1);
+    drawSprite(img, 0, 0, 62, 68);
+  } else {
+    drawSprite(img, player.x, player.y, 62, 68);
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  drawPlayerEquipment();
+  drawBar(player.x - 36, player.y - 48, 72, 8, player.hp / player.maxHp, "#46d57a");
+}
+
+function drawPlayerEquipment() {
+  const helmet = getEquip(save.equipped.helmet);
+  const armor = getEquip(save.equipped.armor);
+  const boots = getEquip(save.equipped.boots);
+  const weapon = getEquip(save.equipped.weapon);
+  ctx.save();
+  if (armor) {
+    ctx.strokeStyle = "rgba(70,213,122,0.72)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(player.x, player.y + 14, 34, 22, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (helmet) {
+    ctx.fillStyle = "rgba(48,228,224,0.86)";
+    ctx.strokeStyle = "#10232d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(player.x + 24, player.y - 30, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  if (boots) {
+    ctx.strokeStyle = "rgba(61,147,255,0.72)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(player.x - 30, player.y + 32);
+    ctx.lineTo(player.x - 46, player.y + 38);
+    ctx.moveTo(player.x + 30, player.y + 32);
+    ctx.lineTo(player.x + 46, player.y + 38);
+    ctx.stroke();
+  }
+  if (weapon) {
+    ctx.fillStyle = "rgba(255,216,97,0.92)";
+    ctx.strokeStyle = "#10232d";
+    ctx.lineWidth = 2;
+    roundedRect(player.x + 24, player.y + 18, 14, 14, 4, true);
+    roundedRect(player.x + 24, player.y + 18, 14, 14, 4, false);
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function drawSprite(img, x, y, w, h) {
+  if (!img) return;
+  ctx.drawImage(img, x - w / 2, y - h / 2, w, h);
+}
+
+function drawPrompt() {
+  const text = state.prompt || "WASD 移动 · Enter 互动";
+  const portraitUi = canvas.clientHeight > canvas.clientWidth * 1.3;
+  const y = portraitUi ? H - 178 : H - 58;
+  ctx.save();
+  ctx.font = "950 20px 'Microsoft YaHei UI', sans-serif";
+  const pad = 18;
+  const width = Math.min(980, ctx.measureText(text).width + pad * 2);
+  const x = W / 2 - width / 2;
+  const grd = ctx.createLinearGradient(x, y, x + width, y + 40);
+  grd.addColorStop(0, "rgba(250,255,238,0.95)");
+  grd.addColorStop(1, "rgba(207,250,255,0.95)");
+  ctx.fillStyle = grd;
+  ctx.strokeStyle = "#10232d";
+  ctx.lineWidth = 4;
+  roundedRect(x, y, width, 42, 8, true);
+  roundedRect(x, y, width, 42, 8, false);
+  drawGameText(text, x + pad, y + 28, 20, "#10232d", false);
+  ctx.restore();
+}
+
+function drawGameText(text, x, y, size, color, shadow = true) {
+  ctx.save();
+  ctx.font = `950 ${size}px 'Microsoft YaHei UI', 'PingFang SC', sans-serif`;
+  if (shadow) {
+    ctx.fillStyle = "rgba(48,228,224,0.6)";
+    ctx.fillText(text, x + 2, y + 2);
+  }
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function drawMarker(x, y, text) {
+  ctx.save();
+  ctx.font = "950 18px 'Microsoft YaHei UI', sans-serif";
+  const width = ctx.measureText(text).width + 24;
+  ctx.fillStyle = "#ffd861";
+  ctx.strokeStyle = "#10232d";
+  ctx.lineWidth = 4;
+  roundedRect(x - width / 2, y - 18, width, 34, 6, true);
+  roundedRect(x - width / 2, y - 18, width, 34, 6, false);
+  ctx.fillStyle = "#10232d";
+  ctx.fillText(text, x - width / 2 + 12, y + 6);
+  ctx.restore();
+}
+
+function drawBar(x, y, w, h, pct, color) {
+  ctx.fillStyle = "#10232d";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 2, y + 2, Math.max(0, w - 4) * clamp(pct, 0, 1), h - 4);
+}
+
+function roundedRect(x, y, w, h, r, fill) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  if (fill) ctx.fill();
+  else ctx.stroke();
+}
+
+function entityRect(e) {
+  return { x: e.x - e.w * 0.36, y: e.y - e.h * 0.22, w: e.w * 0.72, h: e.h * 0.52 };
+}
+
+function bossRect(b) {
+  return { x: b.x - b.w * 0.34, y: b.y - b.h * 0.34, w: b.w * 0.68, h: b.h * 0.68 };
+}
+
+function trapRect(t) {
+  return { x: t.x - t.w * 0.38, y: t.y - t.h * 0.28, w: t.w * 0.76, h: t.h * 0.56 };
+}
+
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function circleHitsRect(c, r) {
+  const nx = clamp(c.x, r.x, r.x + r.w);
+  const ny = clamp(c.y, r.y, r.y + r.h);
+  return Math.hypot(c.x - nx, c.y - ny) <= c.r;
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function rand(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function randomKey(obj) {
+  const keys = Object.keys(obj);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function toast(message) {
+  toastEl.textContent = message;
+  toastEl.classList.remove("hidden");
+  state.toastTimer = 2.7;
+}
+
+function loop(now) {
+  const dt = Math.min(0.033, (now - state.last) / 1000 || 0);
+  state.last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function bindEvents() {
+  document.getElementById("startBtn").addEventListener("click", startNew);
+  document.getElementById("continueBtn").addEventListener("click", continueGame);
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    localStorage.removeItem(SAVE_KEY);
+    OLD_SAVE_KEYS.forEach((key) => localStorage.removeItem(key));
+    save = defaultSave();
+    toast("存档已重置。");
+  });
+
+  window.addEventListener("keydown", (e) => {
+    const key = e.key.toLowerCase();
+    state.keys.add(key);
+    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) e.preventDefault();
+    if (e.repeat) return;
+    if (key === "enter") interact();
+    if (key === " ") triggerAttack();
+    if (key === "q") activateSkill();
+    if (key === "e" && state.scene !== "title") showInventory();
+    if (key === "k" && state.scene !== "title") showSkills();
+    if (key === "c" && state.scene !== "title") showCraft();
+    if (key === "x" && state.scene !== "title") showExchange();
+    if (key === "b" && state.scene !== "title") showBackgrounds();
+    if (key === "m" && state.scene !== "title") showMissions();
+    if (key === "escape") {
+      if (modalOpen()) closeModal();
+      else if (state.scene === "battle" || state.scene === "boss" || state.scene === "horde" || state.scene === "puzzle") enterHub("已退出关卡，角色已回到主页安全区。");
+    }
+    if (key === "n") nextWave();
+  });
+
+  window.addEventListener("keyup", (e) => state.keys.delete(e.key.toLowerCase()));
+  canvas.addEventListener("mousemove", (e) => (state.mouse = canvasPoint(e)));
+  canvas.addEventListener("click", (e) => {
+    const p = canvasPoint(e);
+    state.mouse = p;
+    player.faceX = p.x - player.x;
+    player.faceY = p.y - player.y;
+    if (state.scene === "hub") {
+      const target = hubFacilities.find((f) => Math.abs(p.x - f.x) < f.w / 2 && Math.abs(p.y - f.y) < f.h / 2);
+      if (target) return target.action();
+    }
+    triggerAttack();
+  });
+
+  modal.addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (!button) return;
+    const action = button.dataset.action;
+    const id = button.dataset.id;
+    if (action === "close") closeModal();
+    if (action === "startMob") startBattle();
+    if (action === "startBoss") startBoss();
+    if (action === "startHorde") startHorde();
+    if (action === "startPuzzle") startPuzzle();
+    if (action === "selectTheme") selectTheme(id);
+    if (action === "openCollect") showCollectibleStory(id);
+    if (action === "showMuseum") showMuseum();
+    if (action === "showMuseumTheme") showMuseum(id);
+    if (action === "startDialogue") startDialogue(Number(id || 0));
+    if (action === "dialogueStep") {
+      dialogueRuntime.step = Math.min(2, dialogueRuntime.step + 1);
+      renderDialogue();
+    }
+    if (action === "dialogueBack") {
+      dialogueRuntime.step = 0;
+      renderDialogue();
+    }
+    if (action === "showStoryList") showStoryList();
+    if (action === "openSkills") showSkills();
+    if (action === "unlockSkill") unlockSkill(id);
+    if (action === "selectSkill") selectSkill(id);
+    if (action === "unlock") tryUnlock(id);
+    if (action === "equip") equip(id);
+    if (action === "unequip") unequip(button.dataset.slot);
+    if (action === "craft") craft(id);
+    if (action === "exchange") exchange(id);
+    if (action === "exchangePrint") exchangePrint(id);
+    if (action === "unlockBg") unlockBg(id);
+    if (action === "selectBg") selectBg(id);
+    if (action === "claim") claimMission(id);
+  });
+
+  document.querySelectorAll("[data-pad]").forEach((btn) => {
+    const dir = btn.dataset.pad;
+    btn.addEventListener("pointerdown", () => state.pad.add(dir));
+    btn.addEventListener("pointerup", () => state.pad.delete(dir));
+    btn.addEventListener("pointerleave", () => state.pad.delete(dir));
+  });
+  document.querySelector('[data-action="attack"]').addEventListener("click", triggerAttack);
+  document.querySelector('[data-action="skill"]').addEventListener("click", activateSkill);
+  document.querySelector('[data-action="interact"]').addEventListener("click", interact);
+}
+
+function canvasPoint(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width) * W;
+  const y = ((e.clientY - rect.top) / rect.height) * H;
+  return cameraScene() ? { x: x + state.camera.x, y: y + state.camera.y } : { x, y };
+}
+
+bindEvents();
+loadImages();
+requestAnimationFrame(loop);
