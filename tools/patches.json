@@ -1,0 +1,72 @@
+[
+  [
+    "const scrapRow = document.getElementById(\"scrapRow\");",
+    "const scrapRow = document.getElementById(\"scrapRow\");\nconst hudMiniEl = document.getElementById(\"hudMini\");\nconst coachBubble = document.getElementById(\"coachBubble\");\nconst coachTitle = document.getElementById(\"coachTitle\");\nconst coachText = document.getElementById(\"coachText\");\nconst synthOverlay = document.getElementById(\"synthOverlay\");\nconst storyOverlay = document.getElementById(\"storyOverlay\");",
+    "DOM refs"
+  ],
+  [
+    "  equipBootsBasic: \"assets/sprites/equip_boots_basic.png\",\n};",
+    "  equipBootsBasic: \"assets/sprites/equip_boots_basic.png\",\n  guideSprite: \"assets/sprites/guide_sprite.png\",\n  charBluecat: \"assets/sprites/char_bluecat.png\",\n  charBattery: \"assets/sprites/char_battery.png\",\n  charBottle: \"assets/sprites/char_bottle.png\",\n  charBox: \"assets/sprites/char_box.png\",\n  charShirt: \"assets/sprites/char_shirt.png\",\n  charWarden: \"assets/sprites/char_warden.png\",\n  facilityStory: \"assets/sprites/facility_story.png\",\n  bgElectronic: \"assets/generated/bg_electronic.png\",\n  bgPlastic: \"assets/generated/bg_plastic.png\",\n  bgPaper: \"assets/generated/bg_paper.png\",\n  bgTextile: \"assets/generated/bg_textile.png\",\n};",
+    "imagePaths"
+  ],
+  [
+    "function setWorld(w = 1760, h = 1120) {",
+    "function setWorld(w = 3200, h = 2400) {",
+    "setWorld"
+  ],
+  [
+    "setWorld(1780, 1120);",
+    "setWorld(3200, 2400);",
+    "world 1780"
+  ],
+  [
+    "setWorld(1660, 1040);",
+    "setWorld(2800, 2000);",
+    "world 1660"
+  ],
+  [
+    "img: \"facilityBoard\", x: 280, y: 292, w: 124, h: 82, action: showStory",
+    "img: \"facilityStory\", x: 280, y: 292, w: 124, h: 82, action: showStory",
+    "hub story icon"
+  ],
+  [
+    "  { id: \"green_yard\", name: \"晨光回收庭院\", img: \"bgArena\", tint: \"rgba(232,255,240,0.16)\", accent: \"#75ff9f\" },",
+    "  { id: \"electronic_yard\", name: \"电子再生车间\", img: \"bgElectronic\", tint: \"rgba(47,224,220,0.14)\", accent: \"#2fe0dc\" },",
+    "battleMap electronic"
+  ],
+  [
+    "    electronic: [\"green_yard\", \"blue_sorter\", \"market_lane\"],",
+    "    electronic: [\"electronic_yard\", \"blue_sorter\"],",
+    "rbm electronic"
+  ],
+  [
+    "    plastic: [\"plastic_bay\", \"blue_sorter\", \"green_yard\"],",
+    "    plastic: [\"plastic_bay\", \"blue_sorter\"],",
+    "rbm plastic"
+  ],
+  [
+    "    paper: [\"paper_workshop\", \"market_lane\", \"green_yard\"],",
+    "    paper: [\"paper_workshop\", \"market_lane\"],",
+    "rbm paper"
+  ],
+  [
+    "    textile: [\"textile_lane\", \"green_yard\", \"blue_sorter\"],",
+    "    textile: [\"textile_lane\", \"blue_sorter\"],",
+    "rbm textile"
+  ],
+  [
+    "function drawPlayer() {\n  let img = imgs.heroFront;\n  const moving = Boolean(movementVector().dx || movementVector().dy);\n  const step = Math.floor(player.frame * 8) % 2;\n  if (player.dir.includes(\"up\")) img = imgs.heroBack || imgs.heroWalkBack1;\n  else if (player.dir.includes(\"down\")) img = moving ? (step ? imgs.heroWalkFront1 : imgs.heroWalkFront2) : imgs.heroFront;\n  if (player.dir === \"right\" || player.dir === \"left\" || player.dir === \"up-right\" || player.dir === \"up-left\" || player.dir === \"down-right\" || player.dir === \"down-left\") {\n    img = player.dir.includes(\"up\") ? (imgs.heroBack || img) : step ? imgs.heroWalkRight1 : imgs.heroWalkRight2;\n  }\n  if (player.hurtCd > 0 && Math.floor(player.hurtCd * 20) % 2 === 0) ctx.globalAlpha = 0.5;\n  ctx.save();\n  if (player.dir.includes(\"left\")) {\n    ctx.translate(player.x, player.y);\n    ctx.scale(-1, 1);\n    drawSprite(img, 0, 0, 62, 68);\n  } else {\n    drawSprite(img, player.x, player.y, 62, 68);\n  }\n  ctx.restore();\n  ctx.globalAlpha = 1;\n  drawPlayerEquipment();\n  drawBar(player.x - 36, player.y - 48, 72, 8, player.hp / player.maxHp, \"#46d57a\");\n}",
+    "function drawPlayer() {\n  const moving = Boolean(movementVector().dx || movementVector().dy);\n  const step = Math.floor(player.frame * 8) % 2;\n  let img = imgs.heroFront;\n  const dir = player.dir || \"down\";\n  if (dir.includes(\"up\")) img = moving ? (step ? imgs.heroWalkBack1 : imgs.heroWalkBack2) : (imgs.heroIdleBack || imgs.heroFront);\n  else if (dir.includes(\"down\")) img = moving ? (step ? imgs.heroWalkFront1 : imgs.heroWalkFront2) : imgs.heroFront;\n  else img = moving ? (step ? imgs.heroWalkRight1 : imgs.heroWalkRight2) : (imgs.heroIdleRight || imgs.heroWalkRight1);\n  if (player.hurtCd > 0 && Math.floor(player.hurtCd * 20) % 2 === 0) ctx.globalAlpha = 0.5;\n  const pw = 64, ph = 80;\n  ctx.save();\n  if (dir.includes(\"left\")) { ctx.translate(player.x, player.y); ctx.scale(-1, 1); drawSprite(img, 0, 0, pw, ph); }\n  else drawSprite(img, player.x, player.y, pw, ph);\n  ctx.restore();\n  ctx.globalAlpha = 1;\n  drawPlayerEquipment();\n  drawBar(player.x - 30, player.y - 52, 60, 6, player.hp / player.maxHp, \"#46d57a\");\n}",
+    "drawPlayer"
+  ],
+  [
+    "function drawPlayerEquipment() {\n  const helmet = getEquip(save.equipped.helmet);\n  const armor = getEquip(save.equipped.armor);\n  const boots = getEquip(save.equipped.boots);\n  const weapon = getEquip(save.equipped.weapon);\n  ctx.save();\n  if (armor) {\n    ctx.strokeStyle = \"rgba(70,213,122,0.72)\";\n    ctx.lineWidth = 3;\n    ctx.beginPath();\n    ctx.ellipse(player.x, player.y + 14, 34, 22, 0, 0, Math.PI * 2);\n    ctx.stroke();\n  }\n  if (helmet) {\n    ctx.fillStyle = \"rgba(48,228,224,0.86)\";\n    ctx.strokeStyle = \"#10232d\";\n    ctx.lineWidth = 2;\n    ctx.beginPath();\n    ctx.arc(player.x + 24, player.y - 30, 7, 0, Math.PI * 2);\n    ctx.fill();\n    ctx.stroke();\n  }\n  if (boots) {\n    ctx.strokeStyle = \"rgba(61,147,255,0.72)\";\n    ctx.lineWidth = 3;\n    ctx.beginPath();\n    ctx.moveTo(player.x - 30, player.y + 32);\n    ctx.lineTo(player.x - 46, player.y + 38);\n    ctx.moveTo(player.x + 30, player.y + 32);\n    ctx.lineTo(player.x + 46, player.y + 38);\n    ctx.stroke();\n  }\n  if (weapon) {\n    ctx.fillStyle = \"rgba(255,216,97,0.92)\";\n    ctx.strokeStyle = \"#10232d\";\n    ctx.lineWidth = 2;\n    roundedRect(player.x + 24, player.y + 18, 14, 14, 4, true);\n    roundedRect(player.x + 24, player.y + 18, 14, 14, 4, false);\n  }\n  ctx.restore();\n  ctx.globalAlpha = 1;\n}",
+    "function drawPlayerEquipment() {\n  const helmet = getEquip(save.equipped.helmet);\n  const armor = getEquip(save.equipped.armor);\n  const weapon = getEquip(save.equipped.weapon);\n  const flip = (player.dir || \"down\").includes(\"left\");\n  ctx.save();\n  if (flip) { ctx.translate(player.x, player.y); ctx.scale(-1, 1); ctx.translate(-player.x, -player.y); }\n  if (armor && imgs[armor.img]) { ctx.globalAlpha = 0.82; drawSprite(imgs[armor.img], player.x, player.y + 8, 36, 36); ctx.globalAlpha = 1; }\n  if (helmet && imgs[helmet.img]) { ctx.globalAlpha = 0.9; drawSprite(imgs[helmet.img], player.x, player.y - 30, 30, 30); ctx.globalAlpha = 1; }\n  if (weapon && imgs[weapon.img]) { ctx.globalAlpha = 0.95; drawSprite(imgs[weapon.img], player.x + 22, player.y + 14, 28, 28); ctx.globalAlpha = 1; }\n  ctx.restore();\n}",
+    "drawPlayerEquipment"
+  ],
+  [
+    "function updateHud() {\n  hpText.textContent = `HP ${Math.ceil(player.hp)}/${player.maxHp}`;\n  if (hpFill) hpFill.style.width = `${clamp(player.hp / player.maxHp, 0, 1) * 100}%`;\n  shieldText.textContent = `护盾 ${Math.ceil(player.shield)}/90`;\n  if (shieldFill) shieldFill.style.width = `${clamp(player.shield / 90, 0, 1) * 100}%`;\n  pointText.textContent = `公益点 ${save.points}`;\n  printText.textContent = `打印碎片 ${save.printShard}`;\n  scrapRow.innerHTML = scrapTypes\n    .map(([id, name, img]) => `<span class=\"scrap-chip\"><img src=\"${imagePaths[img]}\" alt=\"\" />${name} ${save.scraps[id] || 0}</span>`)\n    .join(\"\");\n}",
+    "function updateHud() {\n  hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;\n  if (hpFill) hpFill.style.width = `${clamp(player.hp / player.maxHp, 0, 1) * 100}%`;\n  shieldText.textContent = `${Math.ceil(player.shield)}/90`;\n  if (shieldFill) shieldFill.style.width = `${clamp(player.shield / 90, 0, 1) * 100}%`;\n  pointText.textContent = `${save.points}`;\n  printText.textContent = `${save.printShard}`;\n  const theme = currentTheme();\n  if (hudMiniEl) {\n    const relevant = theme.drops.filter((id) => id !== \"token\").slice(0, 3);\n    hudMiniEl.innerHTML = relevant.map((id) => { const st = scrapTypes.find((s) => s[0] === id); return st ? `<span class=\"scrap-chip\"><img src=\"${imagePaths[st[2]]}\" alt=\"\" />${save.scraps[id] || 0}</span>` : \"\"; }).join(\"\");\n  }\n}",
+    "updateHud"
+  ]
+]

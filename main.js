@@ -10,6 +10,12 @@ const shieldFill = document.getElementById("shieldFill");
 const pointText = document.getElementById("pointText");
 const printText = document.getElementById("printText");
 const scrapRow = document.getElementById("scrapRow");
+const hudMiniEl = document.getElementById("hudMini");
+const coachBubble = document.getElementById("coachBubble");
+const coachTitle = document.getElementById("coachTitle");
+const coachText = document.getElementById("coachText");
+const synthOverlay = document.getElementById("synthOverlay");
+const storyOverlay = document.getElementById("storyOverlay");
 
 const W = canvas.width;
 const H = canvas.height;
@@ -82,6 +88,18 @@ const imagePaths = {
   equipArmorGreen: "assets/sprites/equip_armor_green.png",
   equipArmorGold: "assets/sprites/equip_armor_gold.png",
   equipBootsBasic: "assets/sprites/equip_boots_basic.png",
+  guideSprite: "assets/sprites/guide_sprite.png",
+  charBluecat: "assets/sprites/char_bluecat.png",
+  charBattery: "assets/sprites/char_battery.png",
+  charBottle: "assets/sprites/char_bottle.png",
+  charBox: "assets/sprites/char_box.png",
+  charShirt: "assets/sprites/char_shirt.png",
+  charWarden: "assets/sprites/char_warden.png",
+  facilityStory: "assets/sprites/facility_story.png",
+  bgElectronic: "assets/generated/bg_electronic.png",
+  bgPlastic: "assets/generated/bg_plastic.png",
+  bgPaper: "assets/generated/bg_paper.png",
+  bgTextile: "assets/generated/bg_textile.png",
 };
 
 const themeAssetCounts = {
@@ -374,7 +392,7 @@ const themeConfigs = {
 };
 
 const battleMaps = [
-  { id: "green_yard", name: "晨光回收庭院", img: "bgArena", tint: "rgba(232,255,240,0.16)", accent: "#75ff9f" },
+  { id: "electronic_yard", name: "电子再生车间", img: "bgElectronic", tint: "rgba(47,224,220,0.14)", accent: "#2fe0dc" },
   { id: "blue_sorter", name: "蓝色分拣车间", img: "bgLab", tint: "rgba(210,244,255,0.18)", accent: "#30e4e0" },
   { id: "market_lane", name: "公益兑换街区", img: "bgMarket", tint: "rgba(255,248,218,0.18)", accent: "#ffd861" },
   { id: "plastic_bay", name: "塑料潮汐港", img: "bgArena", tint: "rgba(89,174,255,0.18)", accent: "#3d93ff" },
@@ -421,60 +439,24 @@ const collectibleCards = [
 ];
 
 const dialogueScenes = [
-  ["电子废料", "废电池Boss：就是你们把我从遥控器里扣下后随手乱丢，我在湿垃圾里漏出苦味，才变成现在这样。", "我会击败你，但也会把危险废物送到专门回收点。", "电池、含电池设备和尖锐电子部件不要混进普通垃圾。"],
-  ["电子废料", "旧手机：我不是没用了，我的金属、屏幕和电池都还在身体里，只是需要被拆解得更认真。", "我带你去电子废物分拣台。", "电子废弃物含可回收材料，也可能含需要规范处理的有害成分。"],
-  ["电子废料", "耳机线：我被缠成一团时，大家只想剪断我。", "先解开，再分类。", "小型电子配件容易被忽略，集中回收更安全。"],
-  ["电子废料", "碎屏玻璃：别用手直接抓我，我会划伤清运员。", "我用纸包好并贴上提醒。", "尖锐废弃物需要安全包裹，避免二次伤害。"],
-  ["电子废料", "电路板守卫：人类只看见垃圾，看不见铜和芯片。", "我看见的是资源，也看见风险。", "回收不是把危险藏起来，而是按流程处理。"],
-  ["电子废料", "充电宝：我肚子里还有电，挤压会发热。", "我不会把你塞进普通垃圾车。", "含锂电设备存在起火风险，应通过正规渠道回收。"],
-  ["电子废料", "旧灯泡：我的玻璃很薄，里面的材料也不适合乱丢。", "我会按当地要求单独处理。", "特殊灯具和电子照明不应随意破碎丢弃。"],
-  ["电子废料", "键盘怪：我有太多缝隙，灰尘和零件都藏在里面。", "先清理，再拆分。", "拆解前的清洁能提升回收质量。"],
-  ["电子废料", "遥控器：我被丢掉前，其实只需要换电池。", "能修先修，不能修再回收。", "延长物品寿命比直接丢弃更优先。"],
-  ["电子废料", "蓝猫Boss：我由打印失败的边角料和乱丢电池进化而来。", "那我就用正确分类让你恢复原样。", "Boss碎片用于3D废物打印兑换，连接游戏与真实公益。"],
-
-  ["塑料废料", "塑料瓶蟹：我漂过排水沟，差点进了河。", "我把你倒空压扁，送去塑料回收线。", "瓶类回收前应尽量倒空、压扁并保持干净。"],
-  ["塑料废料", "瓶盖蜘蛛：你们总觉得我太小，没有关系。", "小物件也一起收集。", "小塑料容易散落，集中收集能减少环境残留。"],
-  ["塑料废料", "泡沫盒怪：汤汁让我变得油腻，没人愿意接近。", "被污染的包装要先判断是否可清洁。", "食物污染会降低塑料和纸类回收价值。"],
-  ["塑料废料", "吸管蛇：我只被用了一顿饭，却能躲很久很久。", "少用一次性用品。", "减少使用比事后回收更靠前。"],
-  ["塑料废料", "洗衣液桶：我还有残液，混进去会弄脏一整袋。", "我先倒空、冲洗、晾干。", "清洁度影响再生材料质量。"],
-  ["塑料废料", "塑料袋幽灵：风一吹，我就离开垃圾桶。", "我把轻薄塑料扎紧收集。", "轻薄塑料容易飘散，应避免松散丢弃。"],
-  ["塑料废料", "渔网甲虫：我缠住过很多不该缠住的东西。", "回收网具和绳索，减少缠绕风险。", "绳网类废物会造成缠绕危害，需要专门收集。"],
-  ["塑料废料", "瓶片精灵：我想变成新东西，但我怕被混进脏垃圾。", "我会保持分类干净。", "同类、干净、干燥能提高再生机会。"],
-  ["塑料废料", "塑料Boss：你们制造我很快，忘记我更快。", "我会从源头少用，也会正确回收。", "回收教育要同时强调减量、重复使用和分类。"],
-  ["塑料废料", "再生滑板：我来自瓶盖和瓶身，不来自魔法。", "那我会告诉同学们再生材料的来路。", "可见的再生产品能帮助青少年理解循环经济。"],
-
-  ["纸板纸类", "纸箱怪：雨水让我软掉，油污让我失去下一次机会。", "我把纸类放到干燥回收区。", "纸类回收应尽量保持干燥、少油污。"],
-  ["纸板纸类", "外卖纸袋：我看起来是纸，但里面还有塑料膜。", "我先看清材料再分类。", "复合材料要按当地规则处理，不能只看外表。"],
-  ["纸板纸类", "旧作业本：我还有空白页，别急着把我丢掉。", "先双面用完。", "重复使用是回收前的重要一步。"],
-  ["纸板纸类", "快递盒：胶带像盔甲一样贴在我身上。", "我拆掉胶带再压平。", "纸箱回收前压平并去除明显杂物更利于分拣。"],
-  ["纸板纸类", "票据幽灵：我的字迹褪了，但纤维还在。", "干净纸张还能再生。", "纸纤维可循环，但次数和质量有限。"],
-  ["纸板纸类", "纸杯人：我里面有防水层，别把我当普通白纸。", "我会按规则丢到对应类别。", "纸杯和普通办公纸回收路径可能不同。"],
-  ["纸板纸类", "纸浆池：我把碎片重新揉成一团。", "我按顺序投放样本。", "解密关卡用流程顺序训练分类意识。"],
-  ["纸板纸类", "纸板Boss：人类把湿纸和干纸混在一起，害我长出霉斑盔甲。", "我会完成干燥分拣任务。", "源头分类能降低后端处理负担。"],
-  ["纸板纸类", "种子明信片：我想变成一株植物。", "我会把你的故事写给下一个人。", "创意纪念品能把公益行动转成可分享的记忆。"],
-  ["纸板纸类", "书屋模型：知识先流动，再回收。", "能捐的书先捐。", "捐赠、交换、再利用优先于回收。"],
-
-  ["布料纺织", "旧T恤：我只是破了一个洞，不是整个生命都坏掉了。", "我先学会缝补。", "修补和改造能延长衣物寿命。"],
-  ["布料纺织", "纽扣怪：我掉下来以后，被扫进角落。", "我把可用配件拆下来收好。", "纽扣、拉链等配件可以被再利用。"],
-  ["布料纺织", "牛仔裤：我的膝盖磨白了，但口袋还很结实。", "你可以变成背包。", "耐磨布料适合再设计。"],
-  ["布料纺织", "线轴蜘蛛：剪裁台留下的线头，比你想象得多。", "边角料也分类收集。", "生产和手工过程中的边角料同样值得回收。"],
-  ["布料纺织", "校服幽灵：毕业后我被塞进柜子最深处。", "能捐赠就先让你继续被穿。", "还能穿的衣物适合捐赠或交换。"],
-  ["布料纺织", "染色布团：颜色太杂，我害怕没人要。", "我会按材质和状态分开。", "纺织品回收常受材质混纺、染色和破损影响。"],
-  ["布料纺织", "布料Boss：你们追着新款跑，把我丢成一座山。", "我不只战斗，也会学习少买和多穿。", "青少年消费选择同样影响废弃物产生量。"],
-  ["布料纺织", "织物挂毯：我由很多碎片组成，却不是拼凑人生。", "每块旧布都有故事。", "故事化展示能提升参与感。"],
-  ["布料纺织", "再生布袋：我愿意陪你去很多地方。", "我会少拿一次性袋子。", "随身可重复使用物品是低门槛行动。"],
-  ["布料纺织", "拼布猫：边角料也能成为角色。", "我把你放进展馆卡牌。", "收藏系统让废品拥有可记忆的名字。"],
-
-  ["基地剧情", "站长：这里不是垃圾场，是废品的第二次报名处。", "我想成为分拣学员。", "基地引导玩家理解循环流程。"],
-  ["基地剧情", "传送门：请选择主题，别把所有废物都当成同一种敌人。", "我先从电子废料开始。", "不同废物有不同处理路径。"],
-  ["基地剧情", "装备师：武器不是为了炫耀，而是为了更安全地清障。", "我会按主题选择装备。", "装备系统映射不同材料的处理方式。"],
-  ["基地剧情", "展馆管理员：每张卡牌都要讲一个废品的经历。", "我点开卡牌阅读故事。", "叙事能让知识更容易被记住。"],
-  ["基地剧情", "兑换台：打印券不是奖励终点，是现实行动的入口。", "我收集Boss碎片兑换纪念品。", "实物兑换让虚拟公益有现实反馈。"],
-  ["基地剧情", "解密终端：先读提示，再按顺序投放。", "我不再乱点按钮。", "可玩解密比单纯文字说明更适合学习流程。"],
-  ["基地剧情", "技能训练机：强大的技能也需要冷却，环保行动也需要持续。", "我选择适合关卡的技能。", "20秒冷却技能提供策略节奏。"],
-  ["基地剧情", "任务板：今天的目标不是刷分，而是少让一种废品走错路。", "我领取分类任务。", "任务化目标适合青少年持续参与。"],
-  ["基地剧情", "修复站：你倒下时，材料不会消失，知识也不会消失。", "我整理装备再出发。", "失败惩罚轻量化，鼓励继续尝试。"],
-  ["基地剧情", "背景终端：当你解锁新背景，也是在解锁一种废物流的故事。", "我切换到对应主题。", "环境变化帮助区分主题关卡。"],
+  ["序章", "charWarden", "基地引导员", "欢迎来到废品轮回基地。这里不是垃圾场，是废品的第二次报名处。你愿意成为分棣学员吗？", "基地是玩家理解循环流程的起点。"],
+  ["序章", "charWarden", "基地引导员", "每一件被丢弃的东西，都曾被人需要过。我们的任务，是听它们说完自己的故事，再帮它们找到正确的路。", "故事化叙事让知识更容易被记住。"],
+  ["序章", "charWarden", "基地引导员", "基地里有十个功能区。先用 WASD 走到传送门，按 Enter 选择一个主题关卡。", "不同废物有不同处理路径。"],
+  ["序章", "charWarden", "基地引导员", "记住：武器不是为了炒耀，而是为了更安全地清障。先去装备间选一套主题装备。", "装备系统映射不同材料的处理方式。"],
+  ["第一幕·电子废料", "charBattery", "废电池", "就是你们把我从遥控器里扣下后随手丢，我在湿垃圾里漏出苦味，才变成现在这样。", "电池、含电池设备需要规范回收，不能混进普通垃圾。"],
+  ["第一幕·电子废料", "charBattery", "废电池", "我不是没用了，我的金属、外壳都还在，只是需要被送到专门的回收点。", "电子废弃物含可回收材料，也可能含需要规范处理的有害成分。"],
+  ["第一幕·电子废料", "charBluecat", "蓝猫回收守卫", "我是由打印失败的边角料和乱丢电池进化而来的 Boss。你得学会正确分类，我才会真正安静下来。", "Boss 碎片用于 3D 废物打印兑换，连接游戏与真实公益。"],
+  ["第一幕·电子废料", "charWarden", "基地引导员", "你击败了蓝猫守卫，它留下了打印碎片。拿去兑换台，可以换一张 3D 废物打印纪念品券。", "实物兑换让虚拟公益有现实反馈。"],
+  ["第二幕·塑料废料", "charBottle", "塑料瓶蟹", "我漂过排水沟，差点进了河。一个饮料瓶，从被喝完到被正确回收，中间有太多岔路。", "瓶类回收前应尽量倒空、压扁并保持干净。"],
+  ["第二幕·塑料废料", "charBottle", "塑料瓶蟹", "你们制造我很快，喝完就丢，忘记我更快。但我在环境里会停留几百年。", "回收教育要同时强调减量、重复使用和分类。"],
+  ["第二幕·塑料废料", "charBottle", "塑料瓶蟹", "如果我能被洗干净、分好类，我就能变成新的瓶子、衣服、滑板。再生不是魔法，是流程。", "同类、干净、干燥能提高再生机会。"],
+  ["第三幕·纸板纸类", "charBox", "纸箱怪", "雨水让我软掉，油污让我失去下一次机会。我本来可以变成新纸、新盒子。", "纸类回收应尽量保持干燥、少油污。"],
+  ["第三幕·纸板纸类", "charBox", "纸箱怪", "胶带像盔甲一样贴在我身上，你们拆都不拆就扔。拆掉胶带、压平，我就能重新变成纤维。", "纸箱回收前压平并去除明显杂物更利于分棣。"],
+  ["第三幕·纸板纸类", "charBox", "纸箱怪", "我的纤维可以循环，但不是无限的。每次循环都需要更细心的分类。", "纸纤维可循环，但次数和质量有限。"],
+  ["第四幕·布料纺织", "charShirt", "旧T恤", "我只是破了一个洞，不是整个生命都坏掉了。你们追着新款跑，把我丢成一座山。但我的布料还很结实。", "修补和改造能延长衣物寿命。"],
+  ["第四幕·布料纺织", "charShirt", "旧T恤", "能穿的先捐赠，不能穿的再回收。纽扣、拉链这些配件，拆下来还能用。", "纽扣、拉链等配件可以被再利用。"],
+  ["第四幕·布料纺织", "charShirt", "旧T恤", "我由很多碎片组成，却不是拼凑人生。每一块旧布都有故事。", "故事化展示能提升参与感。"],
+  ["尾声", "charWarden", "基地引导员", "你已经听完了四种废品的故事。记住，回收不是终点，是下一次制造的开始。", "回收不是结束，是下一次制造的开始。"],
 ];
 
 const skills = [
@@ -547,7 +529,7 @@ const player = {
 let save = loadSave();
 
 const hubFacilities = [
-  { id: "story", name: "剧情导览", hint: "Enter 看回收剧情", img: "facilityBoard", x: 280, y: 292, w: 124, h: 82, action: showStory },
+  { id: "story", name: "剧情导览", hint: "Enter 看回收剧情", img: "facilityStory", x: 280, y: 292, w: 124, h: 82, action: showStory },
   { id: "workbench", name: "纪念工坊", hint: "Enter 合成收藏品", img: "facilityWorkbench", x: 460, y: 292, w: 132, h: 78, action: showCraft },
   { id: "portal", name: "主题传送门", hint: "Enter 选主题和模式", img: "facilityPortal", x: 640, y: 292, w: 128, h: 112, action: showPortalMenu },
   { id: "museum", name: "收藏展馆", hint: "Enter 查看图鉴", img: "facilityShelf", x: 820, y: 292, w: 132, h: 88, action: showMuseum },
@@ -632,10 +614,10 @@ function currentEnemyDeck() {
 
 function randomBattleMap(preferredTheme = save.currentTheme) {
   const themed = {
-    electronic: ["green_yard", "blue_sorter", "market_lane"],
-    plastic: ["plastic_bay", "blue_sorter", "green_yard"],
-    paper: ["paper_workshop", "market_lane", "green_yard"],
-    textile: ["textile_lane", "green_yard", "blue_sorter"],
+    electronic: ["electronic_yard", "blue_sorter"],
+    plastic: ["plastic_bay", "blue_sorter"],
+    paper: ["paper_workshop", "market_lane"],
+    textile: ["textile_lane", "blue_sorter"],
   }[preferredTheme] || battleMaps.map((m) => m.id);
   const pool = battleMaps.filter((m) => themed.includes(m.id));
   return pool[Math.floor(Math.random() * pool.length)] || battleMaps[0];
@@ -645,7 +627,7 @@ function currentMap() {
   return battleMaps.find((m) => m.id === state.mapId) || battleMaps[0];
 }
 
-function setWorld(w = 1760, h = 1120) {
+function setWorld(w = 3200, h = 2400) {
   state.world = { w, h };
   updateCamera();
 }
@@ -779,6 +761,7 @@ function enterHub(message) {
   recomputePlayerStats();
   toast(message || "回到主页。");
   saveGame();
+  if ((save.stats.defeated || 0) < 3) setTimeout(showCoach, 800);
 }
 
 function snapToSafeHubPoint() {
@@ -887,35 +870,26 @@ function showMuseum() {
 }
 
 function showStory() {
-  const theme = currentTheme();
-  const next = theme.puzzle.map(resourceName).join(" → ");
+  const entries = dialogueScenes
+    .map((scene, index) => `
+      <button class="story-entry" data-action="startDialogue" data-id="${index}">
+        <img src="${imagePaths[storyPortraitFor(scene)]}" alt="" />
+        <span><b>${String(index + 1).padStart(2, "0")} ${scene[0]}</b><small>${scene[2]}</small></span>
+      </button>`)
+    .join("");
   showModal(`
     <div class="modal-header">
       <div>
         <h2>剧情导览</h2>
-        <p>面向青少年的回收公益剧情与操作说明。当前主题：${theme.name}</p>
+        <p>五幕主线剧情：序章 - 电子 - 塑料 - 纸板 - 布料 - 尾声。每段对话突出一个废品主角的故事。</p>
       </div>
       <button class="quiet" data-action="close">关闭 Esc</button>
     </div>
-    <div class="dialog-list">
-      <article class="dialog-card">
-        <img src="${imagePaths.heroFront}" alt="" />
-        <div><strong>回收站学员</strong><p>我把废物带到废品轮回基地，不只是为了打怪，而是想知道它们还能变成什么。</p></div>
-      </article>
-      <article class="dialog-card">
-        <img src="${imagePaths[theme.preview]}" alt="" />
-        <div><strong>站长提示</strong><p>${theme.desc} 小怪模式负责收集材料，解密模式负责学习正确分拣顺序。</p></div>
-      </article>
-      <article class="dialog-card">
-        <img src="${imagePaths.facilityRecycler}" alt="" />
-        <div><strong>解密规则</strong><p>当前分拣顺序：${next}。先捡地上的目标样本，再靠近发光设备按 Enter 投放。投错会扣血，但不会丢材料。</p></div>
-      </article>
-      <article class="dialog-card">
-        <img src="${imagePaths.facilityShelf}" alt="" />
-        <div><strong>展馆目标</strong><p>每个主题都有怪物图鉴和纪念品展柜。后续可以把“收集齐一套主题”作为兑换真实公益纪念品的前置任务。</p></div>
-      </article>
+    <div class="story-actions">
+      <button class="primary" data-action="startDialogue" data-id="0">从序章开始</button>
     </div>
-    <div class="modal-footer">建议游玩路线：剧情导览 → 传送门选主题 → 小怪收集 → 解密学习 → 展馆查看 → Boss 兑换。</div>
+    <div class="story-list">${entries}</div>
+    <div class="modal-footer">点击任意一段开始对话。对话采用立绘加文字形式，类似 RPG 剧情演出。</div>
   `, "bgHub");
 }
 
@@ -927,7 +901,7 @@ function startBattle() {
   resetRuntimeLists();
   state.scene = "battle";
   state.mapId = randomBattleMap(theme.id).id;
-  setWorld(1780, 1120);
+  setWorld(3200, 2400);
   state.buffTimer = 2.2;
   state.traps = createTraps();
   state.obstacles = createBattleObstacles();
@@ -1008,7 +982,7 @@ function startPuzzle() {
   resetRuntimeLists();
   state.scene = "puzzle";
   state.mapId = randomBattleMap(theme.id).id;
-  setWorld(1660, 1040);
+  setWorld(2800, 2000);
   state.obstacles = [
     { x: 244, y: 180, w: 122, h: 74 },
     { x: 1330, y: 180, w: 132, h: 76 },
@@ -1953,24 +1927,92 @@ function showSkills() {
 }
 
 function showCraft() {
-  const cards = recipes
-    .map((recipe) => `
-      <article class="card">
-        <div class="card-title"><img src="${imagePaths[recipe.img]}" alt="" /><span>${recipe.name}</span></div>
-        <p>${recipe.desc}</p>
-        <div class="cost-row">${costHtml(recipe.cost)}</div>
-        <p>库存：${save.souvenirs[recipe.id] || 0} · 可兑换公益点：${recipe.points}</p>
-        <button class="primary" data-action="craft" data-id="${recipe.id}">合成</button>
-      </article>`)
-    .join("");
-  showModal(`
-    <div class="modal-header">
-      <div><h2>收藏品合成</h2><p>小怪模式获得的通用碎片可合成普通纪念品，再兑换公益点。</p></div>
-      <button class="quiet" data-action="close">关闭 Esc</button>
-    </div>
-    <div class="modal-grid">${cards}</div>
-    <div class="modal-footer">快捷键：C 打开合成。</div>
-  `, "bgMarket");
+  if (synthOverlay) {
+    synthOverlay.classList.remove("hidden");
+    state.paused = true;
+    renderSynthRecipes();
+    const title = document.getElementById("synthTitle");
+    const hint = document.getElementById("synthHint");
+    const crafting = document.getElementById("synthCrafting");
+    if (title) title.textContent = "纪念工坊";
+    if (hint) hint.textContent = "选中一个配方，按 Enter 或点击合成启动合成台。";
+    if (crafting) crafting.textContent = "选择配方后合成";
+    return;
+  }
+}
+
+function closeSynth() {
+  if (synthOverlay) synthOverlay.classList.add("hidden");
+  state.paused = false;
+  synthSelected = null;
+}
+
+let synthSelected = null;
+let synthAnimating = false;
+
+function renderSynthRecipes() {
+  const list = document.getElementById("synthRecipes");
+  if (!list) return;
+  const inv = scrapTypes.map(([id, name, img]) => `<span class="cost"><img src="${imagePaths[img]}" alt="" style="width:18px;height:18px;vertical-align:middle"/> ${name} ${save.scraps[id]||0}</span>`).join(" ");
+  list.innerHTML = `<div style="margin-bottom:8px;color:#ffd861;font-size:11px">碎片库存：${inv}</div>` + recipes.map((recipe) => {
+    const can = canAfford(recipe.cost);
+    const owned = save.souvenirs[recipe.id] || 0;
+    return `<div class="synth-recipe ${synthSelected === recipe.id ? "selected" : ""}" data-action="selectSynth" data-id="${recipe.id}">
+      <img src="${imagePaths[recipe.img]}" alt="" />
+      <div class="synth-recipe-text">
+        <strong>${recipe.name} ${can ? "" : "(材料不足)"}</strong>
+        <span>${costHtml(recipe.cost)} 库存 ${owned} 公益点 +${recipe.points}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function selectSynth(id) {
+  synthSelected = id;
+  renderSynthRecipes();
+  const recipe = recipes.find((r) => r.id === id);
+  const crafting = document.getElementById("synthCrafting");
+  if (recipe && crafting) crafting.textContent = `已选：${recipe.name}，按 Enter 合成`;
+}
+
+function doSynth() {
+  if (synthAnimating || !synthSelected) { toast("请先选择一个配方。"); return; }
+  const recipe = recipes.find((r) => r.id === synthSelected);
+  if (!recipe) return;
+  if (!canAfford(recipe.cost)) { toast("碎片不足，无法合成。"); return; }
+  synthAnimating = true;
+  const hammer = document.getElementById("anvilHammer");
+  const spark = document.getElementById("anvilSpark");
+  const crafting = document.getElementById("synthCrafting");
+  if (crafting) crafting.textContent = "合成中...";
+  let strikes = 0;
+  const doStrike = () => {
+    if (hammer) hammer.classList.add("strike");
+    if (spark) { spark.classList.remove("active"); void spark.offsetWidth; spark.classList.add("active"); }
+    strikes++;
+    setTimeout(() => {
+      if (hammer) hammer.classList.remove("strike");
+      if (strikes < 3) setTimeout(doStrike, 200);
+      else finishSynth(recipe);
+    }, 200);
+  };
+  doStrike();
+}
+
+function finishSynth(recipe) {
+  consume(recipe.cost);
+  save.souvenirs[recipe.id] = (save.souvenirs[recipe.id] || 0) + 1;
+  save.stats.crafted += 1;
+  saveGame();
+  synthAnimating = false;
+  const crafting = document.getElementById("synthCrafting");
+  const resultImg = document.getElementById("synthResultImg");
+  const hint = document.getElementById("synthHint");
+  if (resultImg) resultImg.src = imagePaths[recipe.img];
+  if (crafting) crafting.textContent = `合成成功！获得 ${recipe.name} x1`;
+  if (hint) hint.textContent = `${recipe.desc} 库存：${save.souvenirs[recipe.id]}。`;
+  renderSynthRecipes();
+  toast(`${recipe.name} 合成完成。`);
 }
 
 function showExchange() {
@@ -2316,81 +2358,50 @@ function showCollectibleStory(id) {
   `, "bgMarket");
 }
 
-function storyPortraitFor(scene, index) {
-  if (scene[0] === "基地剧情") return index % 2 ? "facilityBoard" : "heroFront";
-  const theme = Object.values(themeConfigs).find((t) => t.name === scene[0]) || currentTheme();
-  const monster = theme.enemies[index % theme.enemies.length];
-  return monster?.img || theme.preview;
+function storyPortraitFor(scene) {
+  return scene[1] || "charWarden";
 }
 
 function startDialogue(index = 0) {
-  const theme = currentTheme();
-  const themed = dialogueScenes.filter((scene) => scene[0] === theme.name || scene[0] === "基地剧情");
-  const others = dialogueScenes.filter((scene) => scene[0] !== theme.name && scene[0] !== "基地剧情");
-  dialogueRuntime = { index: clamp(index, 0, 49), step: 0, list: themed.concat(others).slice(0, 50) };
+  dialogueRuntime = { index: clamp(index, 0, dialogueScenes.length - 1), step: 0, list: dialogueScenes };
   renderDialogue();
 }
 
 function renderDialogue() {
   const scene = dialogueRuntime.list[dialogueRuntime.index] || dialogueRuntime.list[0];
   if (!scene) return;
-  const portrait = storyPortraitFor(scene, dialogueRuntime.index);
-  const lines = [
-    { speaker: scene[0] === "基地剧情" ? "基地引导员" : scene[0] + "污染体", text: scene[1] },
-    { speaker: "我", text: scene[2] },
-    { speaker: "知识提示", text: scene[3] },
-  ];
-  const line = lines[dialogueRuntime.step] || lines[0];
-  const choices = dialogueRuntime.step === 0
-    ? `<button class="choice-btn" data-action="dialogueStep">回应它</button><button class="choice-btn" data-action="startDialogue" data-id="${(dialogueRuntime.index + 1) % dialogueRuntime.list.length}">跳到下一段</button>`
-    : dialogueRuntime.step === 1
-      ? `<button class="choice-btn" data-action="dialogueStep">查看知识点</button><button class="choice-btn" data-action="dialogueBack">重新听废品说</button>`
-      : `<button class="choice-btn" data-action="startDialogue" data-id="${(dialogueRuntime.index + 1) % dialogueRuntime.list.length}">下一段对话</button><button class="choice-btn" data-action="showStoryList">返回剧本目录</button>`;
-  showModal(`
-    <div class="dialogue-stage">
-      <div class="dialogue-topbar">
-        <span>剧情 ${dialogueRuntime.index + 1}/50 · ${scene[0]}</span>
-        <button class="quiet" data-action="close">关闭 Esc</button>
-      </div>
-      <div class="dialogue-scene">
-        <div class="dialogue-portrait"><img src="${imagePaths[portrait]}" alt="" /></div>
-        <div class="dialogue-box">
-          <strong>${line.speaker}</strong>
-          <p>${line.text}</p>
-          <div class="dialogue-choices">${choices}</div>
-        </div>
-      </div>
-    </div>
-  `, "bgHub");
+  const portrait = storyPortraitFor(scene);
+  const name = scene[2] || scene[0];
+  const line = scene[3] || "";
+  const fact = scene[4] || "";
+  if (storyOverlay) {
+    storyOverlay.classList.remove("hidden");
+    const pImg = document.getElementById("storyPortrait");
+    const pName = document.getElementById("storyName");
+    const pDlg = document.getElementById("storyDialogue");
+    const pFact = document.getElementById("storyFact");
+    if (pImg) pImg.src = imagePaths[portrait] || imagePaths.charWarden;
+    if (pName) pName.textContent = name;
+    if (pDlg) pDlg.textContent = line;
+    if (pFact) pFact.textContent = fact;
+    state.paused = true;
+  }
 }
 
-function showStory() {
-  const theme = currentTheme();
-  const themed = dialogueScenes.filter((scene) => scene[0] === theme.name || scene[0] === "基地剧情");
-  const others = dialogueScenes.filter((scene) => scene[0] !== theme.name && scene[0] !== "基地剧情");
-  const list = themed.concat(others).slice(0, 50);
-  const entries = list
-    .map((scene, index) => `
-      <button class="story-entry" data-action="startDialogue" data-id="${index}">
-        <img src="${imagePaths[storyPortraitFor(scene, index)]}" alt="" />
-        <span><b>${String(index + 1).padStart(2, "0")} · ${scene[0]}</b><small>${scene[1]}</small></span>
-      </button>`)
-    .join("");
-  showModal(`
-    <div class="modal-header">
-      <div>
-        <h2>剧情对话</h2>
-        <p>采用类似 RPG 的对话窗口：先听废品怪物发言，再选择回应，最后显示知识点。当前主题 ${theme.name} 的剧情会排在前面。</p>
-      </div>
-      <button class="quiet" data-action="close">关闭 Esc</button>
-    </div>
-    <div class="story-actions">
-      <button class="primary" data-action="startDialogue" data-id="0">开始当前主题第一段</button>
-      <button class="quiet" data-action="startDialogue" data-id="10">基地剧情</button>
-    </div>
-    <div class="story-list">${entries}</div>
-    <div class="modal-footer">Enter 靠近剧情导览打开。对话不用动画，重点是让废品“开口说话”，玩家通过选择学习分类知识。</div>
-  `, "bgHub");
+function closeStory() {
+  if (storyOverlay) storyOverlay.classList.add("hidden");
+  state.paused = false;
+}
+
+function storyRespond() {
+  const next = (dialogueRuntime.index + 1) % dialogueRuntime.list.length;
+  dialogueRuntime.index = next;
+  renderDialogue();
+}
+
+function storyContinueAct() {
+  dialogueRuntime.index = Math.min(dialogueRuntime.list.length - 1, dialogueRuntime.index + 3);
+  renderDialogue();
 }
 
 function showStoryList() {
@@ -2507,15 +2518,8 @@ function unequip(slot) {
 }
 
 function craft(id) {
-  const recipe = recipes.find((r) => r.id === id);
-  if (!recipe) return;
-  if (!canAfford(recipe.cost)) return toast("碎片不足，无法合成。");
-  consume(recipe.cost);
-  save.souvenirs[id] = (save.souvenirs[id] || 0) + 1;
-  save.stats.crafted += 1;
-  saveGame();
-  showCraft();
-  toast(`${recipe.name} 合成完成。`);
+  selectSynth(id);
+  doSynth();
 }
 
 function exchange(id) {
@@ -2620,15 +2624,17 @@ function modalOpen() {
 }
 
 function updateHud() {
-  hpText.textContent = `HP ${Math.ceil(player.hp)}/${player.maxHp}`;
+  hpText.textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
   if (hpFill) hpFill.style.width = `${clamp(player.hp / player.maxHp, 0, 1) * 100}%`;
-  shieldText.textContent = `护盾 ${Math.ceil(player.shield)}/90`;
+  shieldText.textContent = `${Math.ceil(player.shield)}/90`;
   if (shieldFill) shieldFill.style.width = `${clamp(player.shield / 90, 0, 1) * 100}%`;
-  pointText.textContent = `公益点 ${save.points}`;
-  printText.textContent = `打印碎片 ${save.printShard}`;
-  scrapRow.innerHTML = scrapTypes
-    .map(([id, name, img]) => `<span class="scrap-chip"><img src="${imagePaths[img]}" alt="" />${name} ${save.scraps[id] || 0}</span>`)
-    .join("");
+  pointText.textContent = `${save.points}`;
+  printText.textContent = `${save.printShard}`;
+  const theme = currentTheme();
+  if (hudMiniEl) {
+    const relevant = theme.drops.filter((id) => id !== "token").slice(0, 3);
+    hudMiniEl.innerHTML = relevant.map((id) => { const st = scrapTypes.find((s) => s[0] === id); return st ? `<span class="scrap-chip"><img src="${imagePaths[st[2]]}" alt="" />${save.scraps[id] || 0}</span>` : ""; }).join("");
+  }
 }
 
 function draw() {
@@ -3099,70 +3105,35 @@ function drawSkillHud() {
 }
 
 function drawPlayer() {
-  let img = imgs.heroFront;
   const moving = Boolean(movementVector().dx || movementVector().dy);
   const step = Math.floor(player.frame * 8) % 2;
-  if (player.dir.includes("up")) img = imgs.heroBack || imgs.heroWalkBack1;
-  else if (player.dir.includes("down")) img = moving ? (step ? imgs.heroWalkFront1 : imgs.heroWalkFront2) : imgs.heroFront;
-  if (player.dir === "right" || player.dir === "left" || player.dir === "up-right" || player.dir === "up-left" || player.dir === "down-right" || player.dir === "down-left") {
-    img = player.dir.includes("up") ? (imgs.heroBack || img) : step ? imgs.heroWalkRight1 : imgs.heroWalkRight2;
-  }
+  let img = imgs.heroFront;
+  const dir = player.dir || "down";
+  if (dir.includes("up")) img = moving ? (step ? imgs.heroWalkBack1 : imgs.heroWalkBack2) : (imgs.heroIdleBack || imgs.heroFront);
+  else if (dir.includes("down")) img = moving ? (step ? imgs.heroWalkFront1 : imgs.heroWalkFront2) : imgs.heroFront;
+  else img = moving ? (step ? imgs.heroWalkRight1 : imgs.heroWalkRight2) : (imgs.heroIdleRight || imgs.heroWalkRight1);
   if (player.hurtCd > 0 && Math.floor(player.hurtCd * 20) % 2 === 0) ctx.globalAlpha = 0.5;
+  const pw = 64, ph = 80;
   ctx.save();
-  if (player.dir.includes("left")) {
-    ctx.translate(player.x, player.y);
-    ctx.scale(-1, 1);
-    drawSprite(img, 0, 0, 62, 68);
-  } else {
-    drawSprite(img, player.x, player.y, 62, 68);
-  }
+  if (dir.includes("left")) { ctx.translate(player.x, player.y); ctx.scale(-1, 1); drawSprite(img, 0, 0, pw, ph); }
+  else drawSprite(img, player.x, player.y, pw, ph);
   ctx.restore();
   ctx.globalAlpha = 1;
   drawPlayerEquipment();
-  drawBar(player.x - 36, player.y - 48, 72, 8, player.hp / player.maxHp, "#46d57a");
+  drawBar(player.x - 30, player.y - 52, 60, 6, player.hp / player.maxHp, "#46d57a");
 }
 
 function drawPlayerEquipment() {
   const helmet = getEquip(save.equipped.helmet);
   const armor = getEquip(save.equipped.armor);
-  const boots = getEquip(save.equipped.boots);
   const weapon = getEquip(save.equipped.weapon);
+  const flip = (player.dir || "down").includes("left");
   ctx.save();
-  if (armor) {
-    ctx.strokeStyle = "rgba(70,213,122,0.72)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(player.x, player.y + 14, 34, 22, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  if (helmet) {
-    ctx.fillStyle = "rgba(48,228,224,0.86)";
-    ctx.strokeStyle = "#10232d";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(player.x + 24, player.y - 30, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-  }
-  if (boots) {
-    ctx.strokeStyle = "rgba(61,147,255,0.72)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(player.x - 30, player.y + 32);
-    ctx.lineTo(player.x - 46, player.y + 38);
-    ctx.moveTo(player.x + 30, player.y + 32);
-    ctx.lineTo(player.x + 46, player.y + 38);
-    ctx.stroke();
-  }
-  if (weapon) {
-    ctx.fillStyle = "rgba(255,216,97,0.92)";
-    ctx.strokeStyle = "#10232d";
-    ctx.lineWidth = 2;
-    roundedRect(player.x + 24, player.y + 18, 14, 14, 4, true);
-    roundedRect(player.x + 24, player.y + 18, 14, 14, 4, false);
-  }
+  if (flip) { ctx.translate(player.x, player.y); ctx.scale(-1, 1); ctx.translate(-player.x, -player.y); }
+  if (armor && imgs[armor.img]) { ctx.globalAlpha = 0.82; drawSprite(imgs[armor.img], player.x, player.y + 8, 36, 36); ctx.globalAlpha = 1; }
+  if (helmet && imgs[helmet.img]) { ctx.globalAlpha = 0.9; drawSprite(imgs[helmet.img], player.x, player.y - 30, 30, 30); ctx.globalAlpha = 1; }
+  if (weapon && imgs[weapon.img]) { ctx.globalAlpha = 0.95; drawSprite(imgs[weapon.img], player.x + 22, player.y + 14, 28, 28); ctx.globalAlpha = 1; }
   ctx.restore();
-  ctx.globalAlpha = 1;
 }
 
 function drawSprite(img, x, y, w, h) {
@@ -3292,6 +3263,27 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+const tutorialSteps = [
+  { title: "欢迎来到废品轮回", text: "用 WASD 或方向键移动角色。走到发光的设施旁，按 Enter 互动。", scene: "hub" },
+  { title: "选择主题关卡", text: "走到中央的传送门，按 Enter 选择电子、塑料、纸板或布料主题。", scene: "hub" },
+  { title: "战斗基础", text: "在关卡中用 Space 或点击画面攻击。按 Q 释放技能（20 秒冷却）。", scene: "battle" },
+  { title: "合成纪念品", text: "回到基地，走到纪念工坊，按 Enter 打开合成台。", scene: "hub" },
+  { title: "挑战 Boss", text: "在传送门选择 Boss 模式。击败蓝猫守卫获得打印碎片。", scene: "hub" },
+];
+let tutorialIndex = 0;
+function showCoach() {
+  if (!coachBubble) return;
+  const step = tutorialSteps[tutorialIndex];
+  if (!step) { hideCoach(); return; }
+  if (step.scene !== state.scene && step.scene !== "any") return;
+  coachBubble.classList.remove("hidden");
+  if (coachTitle) coachTitle.textContent = step.title;
+  if (coachText) coachText.textContent = step.text;
+}
+function hideCoach() { if (coachBubble) coachBubble.classList.add("hidden"); }
+function coachNext() { tutorialIndex += 1; if (tutorialIndex >= tutorialSteps.length) hideCoach(); else showCoach(); }
+function coachSkip() { hideCoach(); tutorialIndex = tutorialSteps.length; }
+
 function bindEvents() {
   document.getElementById("startBtn").addEventListener("click", startNew);
   document.getElementById("continueBtn").addEventListener("click", continueGame);
@@ -3313,10 +3305,13 @@ function bindEvents() {
     if (key === "e" && state.scene !== "title") showInventory();
     if (key === "k" && state.scene !== "title") showSkills();
     if (key === "c" && state.scene !== "title") showCraft();
+    if (key === "enter" && synthOverlay && !synthOverlay.classList.contains("hidden")) doSynth();
     if (key === "x" && state.scene !== "title") showExchange();
     if (key === "b" && state.scene !== "title") showBackgrounds();
     if (key === "m" && state.scene !== "title") showMissions();
     if (key === "escape") {
+      if (storyOverlay && !storyOverlay.classList.contains("hidden")) { closeStory(); return; }
+      if (synthOverlay && !synthOverlay.classList.contains("hidden")) { closeSynth(); return; }
       if (modalOpen()) closeModal();
       else if (state.scene === "battle" || state.scene === "boss" || state.scene === "horde" || state.scene === "puzzle") enterHub("已退出关卡，角色已回到主页安全区。");
     }
@@ -3384,6 +3379,11 @@ function bindEvents() {
   document.querySelector('[data-action="attack"]').addEventListener("click", triggerAttack);
   document.querySelector('[data-action="skill"]').addEventListener("click", activateSkill);
   document.querySelector('[data-action="interact"]').addEventListener("click", interact);
+  const sR=document.getElementById("storyRespond");const sC=document.getElementById("storyContinue");const sX=document.getElementById("storyClose");
+  if(sR)sR.addEventListener("click",storyRespond);if(sC)sC.addEventListener("click",storyContinueAct);if(sX)sX.addEventListener("click",closeStory);
+  const cN=document.getElementById("coachNext");const cS=document.getElementById("coachSkip");
+  if(cN)cN.addEventListener("click",coachNext);if(cS)cS.addEventListener("click",coachSkip);
+  if(synthOverlay)synthOverlay.addEventListener("click",(e)=>{const r=e.target.closest("[data-action=selectSynth]");if(r)selectSynth(r.dataset.id);});
 }
 
 function canvasPoint(e) {

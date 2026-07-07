@@ -1,0 +1,22 @@
+[
+  [
+    "    if (key === \"c\" && state.scene !== \"title\") showCraft();",
+    "    if (key === \"c\" && state.scene !== \"title\") showCraft();\n    if (key === \"enter\" && synthOverlay && !synthOverlay.classList.contains(\"hidden\")) doSynth();",
+    "keybind synth"
+  ],
+  [
+    "      if (modalOpen()) closeModal();\n      else if (state.scene === \"battle\" || state.scene === \"boss\" || state.scene === \"horde\" || state.scene === \"puzzle\") enterHub(",
+    "      if (storyOverlay && !storyOverlay.classList.contains(\"hidden\")) { closeStory(); return; }\n      if (synthOverlay && !synthOverlay.classList.contains(\"hidden\")) { closeSynth(); return; }\n      if (modalOpen()) closeModal();\n      else if (state.scene === \"battle\" || state.scene === \"boss\" || state.scene === \"horde\" || state.scene === \"puzzle\") enterHub(",
+    "escape overlays"
+  ],
+  [
+    "  document.querySelector('[data-action=\"attack\"]').addEventListener(\"click\", triggerAttack);\n  document.querySelector('[data-action=\"skill\"]').addEventListener(\"click\", activateSkill);\n  document.querySelector('[data-action=\"interact\"]').addEventListener(\"click\", interact);\n}",
+    "  document.querySelector('[data-action=\"attack\"]').addEventListener(\"click\", triggerAttack);\n  document.querySelector('[data-action=\"skill\"]').addEventListener(\"click\", activateSkill);\n  document.querySelector('[data-action=\"interact\"]').addEventListener(\"click\", interact);\n  const sR=document.getElementById(\"storyRespond\");const sC=document.getElementById(\"storyContinue\");const sX=document.getElementById(\"storyClose\");\n  if(sR)sR.addEventListener(\"click\",storyRespond);if(sC)sC.addEventListener(\"click\",storyContinueAct);if(sX)sX.addEventListener(\"click\",closeStory);\n  const cN=document.getElementById(\"coachNext\");const cS=document.getElementById(\"coachSkip\");\n  if(cN)cN.addEventListener(\"click\",coachNext);if(cS)cS.addEventListener(\"click\",coachSkip);\n  if(synthOverlay)synthOverlay.addEventListener(\"click\",(e)=>{const r=e.target.closest(\"[data-action=selectSynth]\");if(r)selectSynth(r.dataset.id);});\n}",
+    "event wiring"
+  ],
+  [
+    "  toast(message || \"回到主页。\");\n  saveGame();\n}",
+    "  toast(message || \"回到主页。\");\n  saveGame();\n  if ((save.stats.defeated || 0) < 3) setTimeout(showCoach, 800);\n}",
+    "coach on hub"
+  ]
+]

@@ -3,60 +3,118 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>废品轮回 Scrap Loop | 公益回收冒险</title>
-    <link rel="stylesheet" href="./style.css?v=scraploop2" />
+    <title>???? Scrap Loop | ??????</title>
+    <link rel="stylesheet" href="./style.css?v=scraploop3" />
   </head>
   <body>
     <main class="shell">
-      <section class="game-frame" aria-label="废品轮回 Scrap Loop 游戏窗口">
+      <section class="game-frame" aria-label="???? Scrap Loop ????">
         <canvas id="game" width="1280" height="720"></canvas>
 
         <div id="titleScreen" class="title-screen">
           <div class="title-copy">
-            <p class="eyebrow">公益回收 · 主题关卡 · 3D 废物打印</p>
-            <h1>废品轮回 Scrap Loop</h1>
-            <p>进入基地，和废品对话，选择电子、塑料、纸板、布料主题关卡。收集碎片升级装备与技能，挑战 Boss 获得打印碎片，兑换公益纪念品。</p>
+            <p class="eyebrow">???? ? ???? ? 3D ????</p>
+            <h1>???? Scrap Loop</h1>
+            <p>??????????????????????????????????????????? Boss ???????????????</p>
             <div class="title-actions">
-              <button id="startBtn" class="game-button primary">开始游戏 Enter</button>
-              <button id="continueBtn" class="game-button">继续存档</button>
-              <button id="resetBtn" class="game-button quiet">重置</button>
+              <button id="startBtn" class="game-button primary">???? Enter</button>
+              <button id="continueBtn" class="game-button">????</button>
+              <button id="resetBtn" class="game-button quiet">??</button>
             </div>
           </div>
         </div>
 
         <div id="hud" class="hud">
-          <div class="stat-row">
-            <div class="vital-chip hp-chip">
+          <div class="hud-vitals">
+            <div class="vital-pill hp-pill">
               <img src="./assets/sprites/item_heart.png" alt="" />
-              <div class="vital-copy">
-                <span id="hpText">HP 100/100</span>
+              <div class="vital-meta">
+                <strong id="hpText">100/100</strong>
                 <div class="vital-bar"><i id="hpFill"></i></div>
               </div>
             </div>
-            <div class="vital-chip shield-chip">
+            <div class="vital-pill shield-pill">
               <img src="./assets/sprites/item_shield.png" alt="" />
-              <div class="vital-copy">
-                <span id="shieldText">护盾 0/90</span>
+              <div class="vital-meta">
+                <strong id="shieldText">0/90</strong>
                 <div class="vital-bar"><i id="shieldFill"></i></div>
               </div>
             </div>
-            <span id="pointText" class="resource-chip">公益点 0</span>
-            <span id="printText" class="resource-chip">打印碎片 0</span>
+            <div class="vital-pill">
+              <img src="./assets/sprites/item_badge.png" alt="" />
+              <strong id="pointText">0</strong>
+            </div>
+            <div class="vital-pill">
+              <img src="./assets/sprites/item_print.png" alt="" />
+              <strong id="printText">0</strong>
+            </div>
           </div>
-          <div class="scrap-row" id="scrapRow"></div>
+          <div class="hud-mini" id="hudMini"></div>
         </div>
 
-        <div class="mobile-pad" aria-label="触控按钮">
+        <div id="coachBubble" class="coach-bubble hidden">
+          <img src="./assets/sprites/guide_sprite.png" alt="" />
+          <div class="coach-copy">
+            <strong id="coachTitle">????</strong>
+            <p id="coachText"></p>
+            <div class="coach-actions">
+              <button id="coachNext" class="game-button primary">???</button>
+              <button id="coachSkip" class="game-button quiet">??</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="synthOverlay" class="synth-overlay hidden">
+          <div class="synth-stage">
+            <div class="synth-portrait">
+              <img id="synthResultImg" src="./assets/sprites/facility_workbench.png" alt="" />
+            </div>
+            <div class="synth-info">
+              <h2 id="synthTitle">????</h2>
+              <p id="synthHint">????????????????????</p>
+              <div class="synth-anvil">
+                <div class="anvil-bowl" id="anvilBowl"></div>
+                <div class="anvil-hammer" id="anvilHammer"></div>
+                <div class="anvil-spark" id="anvilSpark"></div>
+              </div>
+              <div class="synth-crafting" id="synthCrafting">?</div>
+            </div>
+            <div class="synth-recipes">
+              <h3>??????</h3>
+              <div id="synthRecipes" class="synth-recipe-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="storyOverlay" class="story-overlay hidden">
+          <div class="story-stage">
+            <div class="story-portrait">
+              <img id="storyPortrait" src="./assets/sprites/char_warden.png" alt="" />
+              <span id="storyName">?????</span>
+            </div>
+            <div class="story-text">
+              <p id="storyDialogue">?????????????????</p>
+              <p class="story-fact"><b>????</b><span id="storyFact"></span></p>
+              <div class="story-choices">
+                <button id="storyRespond" class="game-button primary">???</button>
+                <button id="storyContinue" class="game-button">?????</button>
+                <button id="storyClose" class="game-button quiet">?? Esc</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-pad" aria-label="????">
           <div class="pad-grid">
-            <button data-pad="up">▲</button>
-            <button data-pad="left">◀</button>
-            <button data-pad="down">▼</button>
-            <button data-pad="right">▶</button>
+            <button data-pad="up">?</button>
+            <button data-pad="left">?</button>
+            <button data-pad="down">?</button>
+            <button data-pad="right">?</button>
           </div>
           <div class="pad-actions">
-            <button data-action="attack">攻击</button>
-            <button data-action="skill">技能</button>
-            <button data-action="interact">互动</button>
+            <button data-action="attack">??</button>
+            <button data-action="skill">??</button>
+            <button data-action="interact">??</button>
           </div>
         </div>
 
@@ -64,6 +122,6 @@
         <div id="toast" class="toast hidden"></div>
       </section>
     </main>
-    <script src="./main.js?v=scraploop2"></script>
+    <script src="./main.js?v=scraploop3"></script>
   </body>
 </html>
