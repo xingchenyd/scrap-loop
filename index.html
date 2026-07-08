@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>废品轮回 Scrap Loop | 公益回收冒险</title>
-    <link rel="stylesheet" href="./style.css?v=scraploop4" />
+    <link rel="stylesheet" href="./style.css?v=scraploop5" />
   </head>
   <body>
     <main class="shell">
@@ -25,35 +25,46 @@
         </div>
 
         <div id="hud" class="hud">
-          <div class="hud-vitals">
-            <div class="vital-pill hp-pill">
-              <img src="./assets/sprites/item_heart.png" alt="" />
-              <div class="vital-meta">
+          <div class="hud-left">
+            <div class="vital-card hp-card">
+              <img src="./assets/sprites/item_heart.png" alt="生命" />
+              <div class="vital-info">
+                <span class="vital-label">生命</span>
                 <strong id="hpText">100/100</strong>
                 <div class="vital-bar"><i id="hpFill"></i></div>
               </div>
             </div>
-            <div class="vital-pill shield-pill">
-              <img src="./assets/sprites/item_shield.png" alt="" />
-              <div class="vital-meta">
+            <div class="vital-card shield-card">
+              <img src="./assets/sprites/item_shield.png" alt="护盾" />
+              <div class="vital-info">
+                <span class="vital-label">护盾</span>
                 <strong id="shieldText">0/90</strong>
                 <div class="vital-bar"><i id="shieldFill"></i></div>
               </div>
             </div>
-            <div class="vital-pill">
-              <img src="./assets/sprites/item_badge.png" alt="" />
-              <strong id="pointText">0</strong>
+          </div>
+          <div class="hud-right">
+            <div class="resource-card">
+              <img src="./assets/sprites/item_badge.png" alt="公益点" />
+              <div class="resource-info">
+                <span class="resource-label">公益点</span>
+                <strong id="pointText">0</strong>
+              </div>
             </div>
-            <div class="vital-pill">
-              <img src="./assets/sprites/item_print.png" alt="" />
-              <strong id="printText">0</strong>
+            <div class="resource-card">
+              <img src="./assets/sprites/item_print.png" alt="打印碎片" />
+              <div class="resource-info">
+                <span class="resource-label">打印碎片</span>
+                <strong id="printText">0</strong>
+              </div>
             </div>
           </div>
-          <div class="hud-mini" id="hudMini"></div>
         </div>
 
         <div id="coachBubble" class="coach-bubble hidden">
-          <img src="./assets/sprites/guide_sprite.png" alt="" />
+          <div class="coach-avatar">
+            <img src="./assets/sprites/guide_sprite.png" alt="" />
+          </div>
           <div class="coach-copy">
             <strong id="coachTitle">回收向导</strong>
             <p id="coachText"></p>
@@ -104,6 +115,24 @@
           </div>
         </div>
 
+        <div id="quizOverlay" class="story-overlay hidden">
+          <div class="story-stage">
+            <div class="story-portrait">
+              <img id="quizPortrait" src="./assets/sprites/facility_terminal.png" alt="" />
+              <span id="quizName">知识问答</span>
+            </div>
+            <div class="story-text">
+              <p id="quizQuestion">加载中...</p>
+              <div id="quizOptions" class="quiz-options"></div>
+              <p id="quizResult" class="story-fact" style="display:none"></p>
+              <div class="story-choices">
+                <button id="quizNext" class="game-button primary" style="display:none">下一题</button>
+                <button id="quizClose" class="game-button quiet">关闭 Esc</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="mobile-pad" aria-label="触控按钮">
           <div class="pad-grid">
             <button data-pad="up">▲</button>
@@ -122,6 +151,6 @@
         <div id="toast" class="toast hidden"></div>
       </section>
     </main>
-    <script src="./main.js?v=scraploop4"></script>
+    <script src="./main.js?v=scraploop5"></script>
   </body>
 </html>

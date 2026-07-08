@@ -16,6 +16,7 @@ const coachTitle = document.getElementById("coachTitle");
 const coachText = document.getElementById("coachText");
 const synthOverlay = document.getElementById("synthOverlay");
 const storyOverlay = document.getElementById("storyOverlay");
+const quizOverlay = document.getElementById("quizOverlay");
 
 const W = canvas.width;
 const H = canvas.height;
@@ -913,6 +914,7 @@ function showStory() {
     </div>
     <div class="story-actions">
       <button class="primary" data-action="startDialogue" data-id="0">从序章开始</button>
+        <button class="game-button" data-action="showQuiz">知识问答</button>
     </div>
     <div class="story-list">${entries}</div>
     <div class="modal-footer">点击任意一段开始对话。对话采用立绘加文字形式，类似 RPG 剧情演出。</div>
@@ -1779,6 +1781,7 @@ function interact() {
   if (modalOpen()) return;
   if (synthOverlay && !synthOverlay.classList.contains("hidden")) { doSynth(); return; }
   if (storyOverlay && !storyOverlay.classList.contains("hidden")) { storyRespond(); return; }
+  if (quizOverlay && !quizOverlay.classList.contains("hidden")) { if (quizAnswered) quizNext(); return; }
   if (state.scene === "hub" && state.nearby) {
     state.nearby.action();
     return;
@@ -2422,6 +2425,77 @@ function storyContinueAct() {
   dialogueRuntime.index = Math.min(dialogueRuntime.list.length - 1, dialogueRuntime.index + 3);
   renderDialogue();
 }
+
+const quizData = [
+  { theme: "electronic", question: "废电池应该怎么处理？", options: ["混进普通垃圾袋", "送到专门的电子废物回收点", "丢进可回收垃圾桶", "直接埋进土里"], correct: 1, reward: { token: 2 } },
+  { theme: "electronic", question: "充电宝含有哪种危险？", options: ["易燃的锂离子电池", "有毒的化学染料", "锋利的金属刀片", "传染性病毒"], correct: 0, reward: { circuit: 3, token: 1 } },
+  { theme: "plastic", question: "塑料瓶回收前最好怎么做？", options: ["随便丢进垃圾桶", "倒空、压扁、保持干净", "用水泡一天", "和食物残渣一起放"], correct: 1, reward: { token: 2 } },
+  { theme: "plastic", question: "哪种塑料不应该回收？", options: ["饮料瓶", "被油污严重污染的泡沫盒", "瓶盖", "塑料尺"], correct: 1, reward: { token: 1 } },
+  { theme: "paper", question: "纸箱回收前需要做什么？", options: ["保持干燥、拆掉胶带、压平", "用水洗干净", "剪成小碎片", "涂上颜色"], correct: 0, reward: { token: 2 } },
+  { theme: "paper", question: "纸杯应该归到哪一类？", options: ["普通纸类（要看当地分类）", "全部是可回收", "有害垃圾", "厨余"], correct: 0, reward: { paper: 3 } },
+  { theme: "textile", question: "旧 T 恤最环保的做法是什么？", options: ["直接丢垃圾桶", "先修补或捐赠", "烧掉", "埋进土里"], correct: 1, reward: { token: 2 } },
+  { theme: "textile", question: "纽扣、拉链这些配件应该？", options: ["丢进垃圾", "拆下来收集可再利用", "混在布料里回收", "焚烧处理"], correct: 1, reward: { token: 1, fabric: 2 } },
+  { theme: "general", question: "3D 打印纪念品券可以兑换什么？", options: ["游戏金币", "真实的回收主题纪念品", "食物", "电子游戏"], correct: 1, reward: { printShard: 1 } },
+  { theme: "general", question: "公益基地的目的是什么？", options: ["赚钱", "听废品故事、学习分类、兑换公益品", "打游戏", "收藏垃圾"], correct: 1, reward: { token: 1 } }
+];
+
+let quizIndex = 0;
+let quizAnswered = false;
+
+function showQuiz() {
+  if (quizIndex >= quizData.length) { quizIndex = 0; }
+  const q = quizData[quizIndex];
+  const quizOv = document.getElementById("quizOverlay");
+  const questionEl = document.getElementById("quizQuestion");
+  const optionsEl = document.getElementById("quizOptions");
+  const resultEl = document.getElementById("quizResult");
+  const nextBtn = document.getElementById("quizNext");
+  if (!quizOv || !questionEl) return;
+  quizOv.classList.remove("hidden");
+  state.paused = true;
+  quizAnswered = false;
+  questionEl.textContent = q.question;
+  resultEl.style.display = "none";
+  resultEl.textContent = "";
+  nextBtn.style.display = "none";
+  optionsEl.innerHTML = q.options.map((opt, i) => 
+    `<button class="quiz-option" data-idx="${i}">${String.fromCharCode(65+i)}. ${opt}</button>`
+  ).join("");
+  optionsEl.querySelectorAll(".quiz-option").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      const chosen = parseInt(btn.dataset.idx);
+      const isCorrect = chosen === q.correct;
+      btn.classList.add(isCorrect ? "correct" : "wrong");
+      if (!isCorrect) {
+        optionsEl.querySelectorAll(".quiz-option")[q.correct].classList.add("correct");
+      }
+      optionsEl.querySelectorAll(".quiz-option").forEach(b => b.disabled = true);
+      resultEl.style.display = "block";
+      resultEl.innerHTML = isCorrect 
+        ? `<b>答对了！</b> 奖励：${costHtml(q.reward)}。` 
+        : `<b>答错了。</b> 正确答案是 ${String.fromCharCode(65+q.correct)}. ${q.options[q.correct]}?`;
+      if (isCorrect) {
+        addReward(q.reward);
+        saveGame();
+      }
+      nextBtn.style.display = "inline-block";
+    });
+  });
+}
+
+function quizNext() {
+  quizIndex += 1;
+  showQuiz();
+}
+
+function closeQuiz() {
+  const quizOv = document.getElementById("quizOverlay");
+  if (quizOv) quizOv.classList.add("hidden");
+  state.paused = false;
+}
+
 
 function showStoryList() {
   showStory();
@@ -3329,6 +3403,7 @@ function bindEvents() {
     if (key === "b" && state.scene !== "title") showBackgrounds();
     if (key === "m" && state.scene !== "title") showMissions();
     if (key === "escape") {
+      if (quizOverlay && !quizOverlay.classList.contains("hidden")) { closeQuiz(); return; }
       if (storyOverlay && !storyOverlay.classList.contains("hidden")) { closeStory(); return; }
       if (synthOverlay && !synthOverlay.classList.contains("hidden")) { closeSynth(); return; }
       if (modalOpen()) closeModal();
@@ -3382,6 +3457,8 @@ function bindEvents() {
     if (action === "equip") equip(id);
     if (action === "unequip") unequip(button.dataset.slot);
     if (action === "craft") craft(id);
+    if (action === "showQuiz") showQuiz();
+    if (action === "storyContinueAct") storyContinueAct();
     if (action === "exchange") exchange(id);
     if (action === "exchangePrint") exchangePrint(id);
     if (action === "unlockBg") unlockBg(id);
@@ -3403,6 +3480,8 @@ function bindEvents() {
   const cN=document.getElementById("coachNext");const cS=document.getElementById("coachSkip");
   if(cN)cN.addEventListener("click",coachNext);if(cS)cS.addEventListener("click",coachSkip);
   if(synthOverlay)synthOverlay.addEventListener("click",(e)=>{const r=e.target.closest("[data-action=selectSynth]");if(r)selectSynth(r.dataset.id);});
+  const qN=document.getElementById("quizNext");const qC=document.getElementById("quizClose");
+  if(qN)qN.addEventListener("click",quizNext);if(qC)qC.addEventListener("click",closeQuiz);
 }
 
 function canvasPoint(e) {
