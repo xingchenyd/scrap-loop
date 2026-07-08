@@ -2866,7 +2866,7 @@ function drawFacility(f) {
 
 function drawFacilityLabel(f) {
   ctx.save();
-  ctx.font = "950 15px 'Microsoft YaHei UI', sans-serif";
+  ctx.font = "950 15px MicrosoftYaHei, PingFangSC, SimHei, sans-serif";
   const text = f.name;
   const width = Math.min(116, ctx.measureText(text).width + 18);
   const x = f.x - width / 2;
@@ -3146,7 +3146,7 @@ function drawPrompt() {
   const portraitUi = canvas.clientHeight > canvas.clientWidth * 1.3;
   const y = portraitUi ? H - 178 : H - 58;
   ctx.save();
-  ctx.font = "950 20px 'Microsoft YaHei UI', sans-serif";
+  ctx.font = "950 20px MicrosoftYaHei, PingFangSC, SimHei, sans-serif";
   const pad = 18;
   const width = Math.min(980, ctx.measureText(text).width + pad * 2);
   const x = W / 2 - width / 2;
@@ -3164,7 +3164,7 @@ function drawPrompt() {
 
 function drawGameText(text, x, y, size, color, shadow = true) {
   ctx.save();
-  ctx.font = `950 ${size}px 'Microsoft YaHei UI', 'PingFang SC', sans-serif`;
+  ctx.font = `950 ${size}px MicrosoftYaHei, PingFangSC, SimHei, sans-serif`;
   if (shadow) {
     ctx.fillStyle = "rgba(48,228,224,0.6)";
     ctx.fillText(text, x + 2, y + 2);
@@ -3176,7 +3176,7 @@ function drawGameText(text, x, y, size, color, shadow = true) {
 
 function drawMarker(x, y, text) {
   ctx.save();
-  ctx.font = "950 18px 'Microsoft YaHei UI', sans-serif";
+  ctx.font = "950 18px MicrosoftYaHei, PingFangSC, SimHei, sans-serif";
   const width = ctx.measureText(text).width + 24;
   ctx.fillStyle = "#ffd861";
   ctx.strokeStyle = "#10232d";
