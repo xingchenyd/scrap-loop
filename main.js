@@ -1239,10 +1239,10 @@ function updateBattle(dt) {
     return false;
   });
   if (!state.enemies.length && !state.battlePortal) {
-    state.battlePortal = { x: 1088, y: 358, r: 64, mode: "home" };
+    state.battlePortal = { x: Math.min(state.world.w - 100, player.x + 200), y: Math.min(state.world.h - 100, player.y - 100), r: 64, mode: "home" };
     save.stats.bestWave = Math.max(save.stats.bestWave, state.wave);
     saveGame();
-    toast("小怪清理完成。Enter 回主页，N 继续下一波。");
+    toast("小怪清理完成！跟随黄色箭头找到传送门，Enter 回主页，N 继续下一波。");
   }
   state.prompt =
     state.battlePortal && distance(player, state.battlePortal) < 90
@@ -1284,7 +1284,7 @@ function updateHorde(dt) {
   if ((state.hordeTime <= 0 || state.hordeKills >= 36) && !state.battlePortal) {
     addReward({ token: 2, metal: 4, plastic: 4 });
     save.stats.bestWave = Math.max(save.stats.bestWave, state.wave);
-    state.battlePortal = { x: 1088, y: 358, r: 64, mode: "home" };
+    state.battlePortal = { x: Math.min(state.world.w - 100, player.x + 200), y: Math.min(state.world.h - 100, player.y - 100), r: 64, mode: "home" };
     saveGame();
     toast("尸潮防守完成：获得回收章和基础材料奖励。");
   }
@@ -1364,7 +1364,7 @@ function updateBoss(dt) {
     save.printShard += reward;
     save.stats.bossDefeated += 1;
     if (!save.unlockedBackgrounds.includes("boss")) save.unlockedBackgrounds.push("boss");
-    state.battlePortal = { x: 1088, y: 358, r: 64, mode: "home" };
+    state.battlePortal = { x: Math.min(state.world.w - 100, player.x + 200), y: Math.min(state.world.h - 100, player.y - 100), r: 64, mode: "home" };
     saveGame();
     toast(`蓝猫回收守卫已净化！获得打印碎片 ×${reward}，已解锁 Boss 背景。`);
   }
@@ -2831,7 +2831,34 @@ function drawBattle() {
   drawPlayer();
   drawSkillWorldEffects();
   ctx.restore();
+  drawPortalArrow();
   drawSkillHud();
+}
+
+function drawPortalArrow() {
+  if (!state.battlePortal) return;
+  const dx = state.battlePortal.x - player.x;
+  const dy = state.battlePortal.y - player.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 200) return;
+  const angle = Math.atan2(dy, dx);
+  const arrowX = player.x + Math.cos(angle) * 60;
+  const arrowY = player.y - 50 + Math.sin(angle) * 40;
+  ctx.save();
+  ctx.translate(arrowX, arrowY);
+  ctx.rotate(angle);
+  ctx.fillStyle = "#ffd861";
+  ctx.strokeStyle = "#0d1f2a";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(20, 0);
+  ctx.lineTo(-10, -12);
+  ctx.lineTo(-4, 0);
+  ctx.lineTo(-10, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawHorde() {
@@ -2908,6 +2935,7 @@ function drawBossBattle() {
   drawBossDamageFloaters();
   ctx.restore();
   if (state.boss && !state.boss.defeated) drawBossHud(state.boss);
+  drawPortalArrow();
   drawSkillHud();
 }
 
