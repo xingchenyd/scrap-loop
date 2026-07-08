@@ -101,6 +101,8 @@ const imagePaths = {
   bgPlastic: "assets/generated/bg_plastic.png",
   bgPaper: "assets/generated/bg_paper.png",
   bgTextile: "assets/generated/bg_textile.png",
+  itemPaper: "assets/sprites/item_paper.png",
+  itemFabric: "assets/sprites/item_fabric.png",
 };
 
 const themeAssetCounts = {
@@ -129,8 +131,8 @@ const scrapTypes = [
   ["coil", "铜线圈", "itemCoil"],
   ["gear", "齿轮", "itemGear"],
   ["battery", "电池芯", "itemBattery"],
-  ["paper", "纸板纤维", "paperSouvenir1"],
-  ["fabric", "再生布料", "textileSouvenir1"],
+  ["paper", "纸板纤维", "itemPaper"],
+  ["fabric", "再生布料", "itemFabric"],
   ["token", "回收章", "itemToken"],
 ];
 
@@ -1843,7 +1845,18 @@ function useMedbay() {
 }
 
 function useRecycler() {
-  showCraft();
+  closeModal();
+  if (synthOverlay) {
+    synthOverlay.classList.remove("hidden");
+    state.paused = true;
+    renderRecyclerUI();
+    const title = document.getElementById("synthTitle");
+    const hint = document.getElementById("synthHint");
+    const crafting = document.getElementById("synthCrafting");
+    if (title) title.textContent = "精炼机";
+    if (hint) hint.textContent = "选择一类材料，按 Enter 或点击精炼：消耗 3 个同类碎片，炼成 1 枚回收章。";
+    if (crafting) crafting.textContent = "选择碎片类别后精炼";
+  }
 }
 
 function showInventory() {
@@ -1949,6 +1962,7 @@ function showSkills() {
 }
 
 function showCraft() {
+  closeModal();
   if (synthOverlay) {
     synthOverlay.classList.remove("hidden");
     state.paused = true;
@@ -1989,6 +2003,29 @@ function renderSynthRecipes() {
   }).join("");
 }
 
+function renderRecyclerUI() {
+  const list = document.getElementById("synthRecipes");
+  if (!list) return;
+  const scrapNames = { plastic: "塑料带", glass: "玻璃片", metal: "金属板", circuit: "电路板", coil: "铜线圈", gear: "齿轮", battery: "电池芯", paper: "纸板纤维", fabric: "再生布料" };
+  const candidates = Object.keys(scrapNames).filter((id) => (save.scraps[id] || 0) >= 3);
+  const inv = scrapTypes.map(([id, name, img]) => `<span class="cost"><img src="${imagePaths[img]}" alt="" style="width:16px;height:16px;vertical-align:middle"/> ${name} ${save.scraps[id]||0}</span>`).join(" ");
+  if (!candidates.length) {
+    list.innerHTML = `<div style="color:#ffd861;margin-bottom:8px">碎片库存：${inv}</div><div class="recycler-empty">库存中没有 3 个以上同类碎片。回到关卡收集更多碎片后再来精炼。</div>`;
+    return;
+  }
+  list.innerHTML = `<div style="color:#ffd861;margin-bottom:8px;font-size:11px">碎片库存：${inv}</div>` + candidates.map((id) => {
+    const count = save.scraps[id] || 0;
+    return `<div class="synth-recipe recycler-option" data-action="doRecycle" data-id="${id}">
+      <img src="${imagePaths["item" + id.charAt(0).toUpperCase() + id.slice(1)] || imagePaths.itemToken}" alt="" />
+      <div class="synth-recipe-text">
+        <strong>${scrapNames[id] || id} ×${count}</strong>
+        <span>消耗 3 个 → 获得 1 枚回收章</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+
 function selectSynth(id) {
   synthSelected = id;
   renderSynthRecipes();
@@ -1996,6 +2033,20 @@ function selectSynth(id) {
   const crafting = document.getElementById("synthCrafting");
   if (recipe && crafting) crafting.textContent = `已选：${recipe.name}，按 Enter 合成`;
 }
+
+function doRecycle(id) {
+  if (!id) return;
+  if ((save.scraps[id] || 0) < 3) {
+    toast("碎片不足，需要至少 3 个。");
+    return;
+  }
+  save.scraps[id] -= 3;
+  save.scraps.token = (save.scraps.token || 0) + 1;
+  saveGame();
+  renderRecyclerUI();
+  toast("精炼成功：获得 1 枚回收章。");
+}
+
 
 function doSynth() {
   if (synthAnimating || !synthSelected) { toast("请先选择一个配方。"); return; }
@@ -2385,6 +2436,7 @@ function storyPortraitFor(scene) {
 }
 
 function startDialogue(index = 0) {
+  closeModal();
   dialogueRuntime = { index: clamp(index, 0, dialogueScenes.length - 1), step: 0, list: dialogueScenes };
   renderDialogue();
 }
@@ -2443,6 +2495,7 @@ let quizIndex = 0;
 let quizAnswered = false;
 
 function showQuiz() {
+  closeModal();
   if (quizIndex >= quizData.length) { quizIndex = 0; }
   const q = quizData[quizIndex];
   const quizOv = document.getElementById("quizOverlay");
@@ -3458,6 +3511,7 @@ function bindEvents() {
     if (action === "unequip") unequip(button.dataset.slot);
     if (action === "craft") craft(id);
     if (action === "showQuiz") showQuiz();
+    if (action === "doRecycle") doRecycle(id);
     if (action === "storyContinueAct") storyContinueAct();
     if (action === "exchange") exchange(id);
     if (action === "exchangePrint") exchangePrint(id);
@@ -3479,7 +3533,7 @@ function bindEvents() {
   if(sR)sR.addEventListener("click",storyRespond);if(sC)sC.addEventListener("click",storyContinueAct);if(sX)sX.addEventListener("click",closeStory);
   const cN=document.getElementById("coachNext");const cS=document.getElementById("coachSkip");
   if(cN)cN.addEventListener("click",coachNext);if(cS)cS.addEventListener("click",coachSkip);
-  if(synthOverlay)synthOverlay.addEventListener("click",(e)=>{const r=e.target.closest("[data-action=selectSynth]");if(r)selectSynth(r.dataset.id);});
+  if(synthOverlay)synthOverlay.addEventListener("click",(e)=>{const r=e.target.closest("[data-action=selectSynth]");const c=e.target.closest("[data-action=doRecycle]");if(r)selectSynth(r.dataset.id);if(c)doRecycle(c.dataset.id);});
   const qN=document.getElementById("quizNext");const qC=document.getElementById("quizClose");
   if(qN)qN.addEventListener("click",quizNext);if(qC)qC.addEventListener("click",closeQuiz);
 }
