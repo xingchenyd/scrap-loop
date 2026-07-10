@@ -338,3 +338,134 @@ canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; 
 .recycler-option { background: rgba(47,224,220,0.12) !important; }
 .recycler-option:hover { background: rgba(47,224,220,0.25) !important; border-color: #2fe0dc !important; }
 .recycler-empty { padding: 20px; text-align: center; color: #ffd861; font-size: 14px; background: rgba(255,216,97,0.1); border: 2px solid rgba(255,216,97,0.3); border-radius: 12px; }
+/* ====== v8 Contrast & Style Fixes ====== */
+
+/* Brighter modal text for readability */
+.modal p { color: #f0f8f4; font-weight: 700; }
+.modal h3 { color: #ffd861; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.modal-header h2 { text-shadow: 0 2px 0 #0d1f2a, 0 0 12px rgba(47,224,220,0.6); }
+.modal-header h2 + p { color: #c8e6d9; font-weight: 700; }
+.modal-footer { color: #ffd861; font-weight: 800; text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+
+/* Light-bg cards inside modal: force dark text */
+.card p, .card strong, .card span, .card b { color: #0d1f2a !important; }
+.collect-card p, .collect-card strong, .collect-card span, .collect-card b, .collect-card h3 { color: #0d1f2a !important; }
+.collect-card .rarity { color: #1a8a6a !important; }
+.equip-slot-card, .equip-slot-card strong, .equip-slot-card span { color: #0d1f2a !important; }
+.theme-option, .theme-option span, .theme-option strong { color: #0d1f2a !important; }
+.story-entry, .story-entry b, .story-entry small, .story-entry span { color: #0d1f2a !important; }
+
+/* Story section headers in showStory */
+.story-section { margin-bottom: 14px; }
+.story-section h3 { font-size: 14px; font-weight: 800; padding-bottom: 4px; margin: 10px 0 6px; }
+
+/* Story actions bar */
+.story-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* Esc/Close button: clearly rounded game-style */
+.modal-header .game-button.quiet,
+.modal-header button.quiet {
+  border-radius: 20px !important;
+  padding: 8px 18px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  background: linear-gradient(180deg, #3a5a6a 0%, #1a3540 100%) !important;
+  color: #ffd861 !important;
+  border: 2px solid #0d1f2a !important;
+  box-shadow: 0 3px 0 #0d1f2a !important;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.modal-header .game-button.quiet:hover,
+.modal-header button.quiet:hover { transform: translateY(-1px); }
+.modal-header .game-button.quiet:active,
+.modal-header button.quiet:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d1f2a; }
+
+/* Make modal buttons always game-styled */
+.modal button:not(.game-button):not(.story-entry):not(.quiz-option) {
+  font-family: inherit;
+  font-size: 13px; font-weight: 800;
+  padding: 8px 16px; cursor: pointer;
+  border: 2px solid #0d1f2a; border-radius: 16px;
+  background: #f5fcef; color: #0d1f2a;
+  box-shadow: 0 3px 0 #0d1f2a;
+  transition: transform 0.08s ease;
+}
+.modal button:not(.game-button):not(.story-entry):not(.quiz-option):hover { transform: translateY(-1px); }
+.modal button:not(.game-button):not(.story-entry):not(.quiz-option):active { transform: translateY(2px); box-shadow: 0 1px 0 #0d1f2a; }
+.modal button:not(.game-button):not(.story-entry):not(.quiz-option).primary {
+  background: linear-gradient(180deg, #2fe0dc 0%, #1bc1bd 100%); color: #062f2e;
+}
+.modal button:not(.game-button):not(.story-entry):not(.quiz-option).quiet {
+  background: linear-gradient(180deg, #3a5a6a 0%, #1a3540 100%); color: #ffd861;
+  border-radius: 20px;
+}
+.modal button:not(.game-button):not(.story-entry):not(.quiz-option):disabled {
+  opacity: 0.5; cursor: default; transform: none;
+}
+
+/* Inventory cost chips in synth panel: high contrast */
+.synth-recipes .cost {
+  background: rgba(255,216,97,0.95) !important;
+  border: 2px solid #b89530 !important;
+  color: #2a1a00 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 0 #fff5d0 !important;
+}
+
+/* Synth recipe text: brighter */
+.synth-recipe-text strong { color: #2fe0dc; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.synth-recipe-text span { color: #d0e8dc; font-weight: 600; }
+
+/* Slot pills in inventory */
+.slot-pill { background: rgba(47,224,220,0.15); border: 2px solid rgba(47,224,220,0.4); border-radius: 10px; padding: 6px 12px; font-size: 12px; color: #f0f8f4; font-weight: 700; display: inline-block; margin: 3px; }
+
+/* Monster entry in museum */
+.monster-entry { display: flex; gap: 8px; padding: 8px; background: rgba(47,224,220,0.08); border: 2px solid rgba(47,224,220,0.3); border-radius: 12px; margin-bottom: 6px; }
+.monster-entry img { width: 48px; height: 48px; image-rendering: pixelated; flex-shrink: 0; }
+.monster-entry strong { color: #2fe0dc; font-size: 13px; }
+.monster-entry p { color: #d0e8dc; font-size: 12px; margin: 2px 0 0; }
+
+/* Dialog card (legacy) */
+.dialog-card { display: flex; gap: 8px; padding: 8px; background: rgba(47,224,220,0.08); border: 2px solid rgba(47,224,220,0.3); border-radius: 12px; margin-bottom: 6px; }
+.dialog-card img { width: 48px; height: 48px; image-rendering: pixelated; flex-shrink: 0; }
+.dialog-card strong { color: #2fe0dc; font-size: 13px; }
+.dialog-card p { color: #d0e8dc; font-size: 12px; margin: 2px 0; }
+
+/* Equip theme block */
+.equip-theme-block { background: rgba(47,224,220,0.06); border: 2px solid rgba(47,224,220,0.25); border-radius: 14px; padding: 10px; margin-bottom: 12px; }
+.equip-theme-block h3 { color: #2fe0dc; margin: 0 0 6px; font-size: 15px; font-weight: 800; }
+
+/* Card detail (collectible story view) */
+.card-detail { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: start; }
+.card-detail .collect-art.large img { width: 100px; height: 100px; image-rendering: pixelated; }
+.card-detail .rarity { color: #ffd861; font-size: 12px; font-weight: 700; }
+.card-detail p { color: #f0f8f4; font-size: 13px; line-height: 1.6; }
+.card-lore-note { margin-top: 10px; padding: 8px 12px; background: rgba(255,216,97,0.1); border-left: 3px solid #ffd861; border-radius: 8px; color: #ffd861; font-size: 12px; font-weight: 600; }
+
+/* Museum layout */
+.museum-layout { display: grid; grid-template-columns: 1fr 260px; gap: 14px; }
+.museum-side h3 { color: #ffd861; font-size: 14px; font-weight: 800; margin: 10px 0 6px; }
+.museum-side p { color: #d0e8dc; font-size: 12px; font-weight: 600; }
+@media (max-width: 800px) { .museum-layout { grid-template-columns: 1fr; } }
+
+/* Inventory grid */
+.equip-layout { display: grid; grid-template-columns: 200px 1fr; gap: 16px; }
+@media (max-width: 700px) { .equip-layout { grid-template-columns: 1fr; } }
+
+/* HUD mini (scrap chips) */
+.hud-mini { display: flex; gap: 4px; align-items: center; }
+.scrap-chip { display: inline-flex; align-items: center; gap: 3px; background: rgba(8,28,42,0.85); border: 2px solid rgba(47,224,220,0.4); border-radius: 8px; padding: 2px 6px; font-size: 11px; color: #f0f8f4; font-weight: 700; }
+.scrap-chip img { width: 16px; height: 16px; image-rendering: pixelated; }
+
+/* ====== v8 Paperdoll Fix ====== */
+.paperdoll-stack { position: relative; width: 130px; height: 180px; background: rgba(47,224,220,0.08); border: 2px solid rgba(47,224,220,0.3); border-radius: 12px; overflow: hidden; }
+.paperdoll-stack .hero-base { left: 50%; bottom: 8px; width: 64px; height: 88px; transform: translateX(-50%); opacity: 1; z-index: 1; }
+.paperdoll-stack .paper-helmet { left: 50%; top: 8px; width: 28px; height: 28px; transform: translateX(-50%); opacity: 0.9; z-index: 2; }
+.paperdoll-stack .paper-armor { left: 50%; top: 38px; width: 36px; height: 36px; transform: translateX(-50%); opacity: 0.85; z-index: 3; }
+.paperdoll-stack .paper-weapon { right: 6px; bottom: 40px; width: 24px; height: 24px; opacity: 0.9; z-index: 2; }
+.paperdoll-stack .paper-boots { left: 50%; bottom: 4px; width: 32px; height: 20px; transform: translateX(-50%); opacity: 0.8; z-index: 4; }
+
+/* equip theme list container */
+.equip-theme-list { display: flex; flex-direction: column; gap: 12px; }
+.slot-row { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }

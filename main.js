@@ -857,69 +857,39 @@ function showPortalMenu() {
   );
 }
 
-function showMuseum() {
-  const theme = currentTheme();
-  const monsters = theme.enemies
-    .map((enemy) => `
-      <article class="card">
-        <div class="card-title"><img src="${imagePaths[enemy.img]}" alt="" /><span>${enemy.name}</span></div>
-        <p>主题污染体。击败后掉落 ${enemy.drop.map(resourceName).join("、")}。</p>
-      </article>`)
-    .join("");
-  const souvenirs = theme.souvenirs
-    .map((item) => `
-      <article class="card good">
-        <div class="card-title"><img src="${imagePaths[item.img]}" alt="" /><span>${item.name}</span></div>
-        <p>${item.desc}</p>
-      </article>`)
-    .join("");
-  const facilities = theme.facilities
-    .map((img, index) => `
-      <article class="card warn">
-        <div class="card-title"><img src="${imagePaths[img]}" alt="" /><span>${theme.short}设施 ${index + 1}</span></div>
-        <p>用于后续主题地图、展馆陈列和回收流程教学。</p>
-      </article>`)
-    .join("");
-  showModal(`
-    <div class="modal-header">
-      <div>
-        <h2>收藏展馆：${theme.name}</h2>
-        <p>这里按主题展示怪物图鉴、可兑换纪念品和回收设施。后续可以把真实收集进度、兑换记录和科普卡片接进来。</p>
-      </div>
-      <button class="quiet" data-action="close">关闭 Esc</button>
-    </div>
-    <h3>污染体图鉴</h3>
-    <div class="modal-grid">${monsters}</div>
-    <h3>公益纪念品</h3>
-    <div class="modal-grid">${souvenirs}</div>
-    <h3>主题设施</h3>
-    <div class="modal-grid">${facilities}</div>
-    <div class="modal-footer">提示：在传送门切换主题后，展馆内容也会切换。快捷键：Enter 靠近展馆打开。</div>
-  `, "bgMarket");
-}
 
 function showStory() {
-  const entries = dialogueScenes
-    .map((scene, index) => `
-      <button class="story-entry" data-action="startDialogue" data-id="${index}">
-        <img src="${imagePaths[storyPortraitFor(scene)]}" alt="" />
-        <span><b>${String(index + 1).padStart(2, "0")} ${scene[0]}</b><small>${scene[2]}</small></span>
-      </button>`)
-    .join("");
+  const acts = [
+    { key: "序章", label: "序章·基地引导", color: "#2fe0dc" },
+    { key: "第一幕·电子废料", label: "第一幕·电子废料", color: "#ffd861" },
+    { key: "第二幕·塑料废料", label: "第二幕·塑料废料", color: "#46d57a" },
+    { key: "第三幕·纸板纸类", label: "第三幕·纸板纸类", color: "#d4a76a" },
+    { key: "第四幕·布料纺织", label: "第四幕·布料纺织", color: "#e87aa0" },
+    { key: "尾声", label: "尾声·循环再生", color: "#c8b8ff" },
+  ];
+  const sections = acts.map((act) => {
+    const sceneList = dialogueScenes.map((scene, index) => ({ scene, index })).filter((item) => item.scene[0] === act.key);
+    if (!sceneList.length) return "";
+    const cards = sceneList.map((item) => {
+      const preview = (item.scene[3] || "").slice(0, 40);
+      return `<button class="story-entry" data-action="startDialogue" data-id="${item.index}"><img src="${imagePaths[storyPortraitFor(item.scene)]}" alt="" /><span><b>${String(item.index + 1).padStart(2, "0")} ${item.scene[2]}</b><small>${preview}...</small></span></button>`;
+    }).join("");
+    return `<div class="story-section"><h3 style="color:${act.color};border-bottom:2px solid ${act.color};padding-bottom:4px;margin:12px 0 6px;">${act.label}</h3><div class="story-list">${cards}</div></div>`;
+  }).join("");
   showModal(`
     <div class="modal-header">
       <div>
         <h2>剧情导览</h2>
-        <p>五幕主线剧情：序章 - 电子 - 塑料 - 纸板 - 布料 - 尾声。每段对话突出一个废品主角的故事。</p>
+        <p>五幕主线剧情：序章 → 电子 → 塑料 → 纸板 → 布料 → 尾声。点击任意一段进入立绘对话，按 Enter 推进，按 Esc 关闭。</p>
       </div>
       <button class="quiet" data-action="close">关闭 Esc</button>
     </div>
     <div class="story-actions">
-      <button class="primary" data-action="startDialogue" data-id="0">从序章开始</button>
-        <button class="game-button" data-action="showQuiz">知识问答</button>
+      <button class="game-button primary" data-action="startDialogue" data-id="0">从序章开始</button>
+      <button class="game-button" data-action="showQuiz">知识问答</button>
     </div>
-    <div class="story-list">${entries}</div>
-    <div class="modal-footer">点击任意一段开始对话。对话采用立绘加文字形式，类似 RPG 剧情演出。</div>
+    ${sections}
+    <div class="modal-footer">提示：对话中按 Enter 推进到下一句，答对问答可获得碎片奖励。</div>
   `, "bgHub");
 }
 
@@ -1781,7 +1751,7 @@ function interact() {
     return;
   }
   if (modalOpen()) return;
-  if (synthOverlay && !synthOverlay.classList.contains("hidden")) { doSynth(); return; }
+  if (synthOverlay && !synthOverlay.classList.contains("hidden")) { if (synthMode === "craft") doSynth(); return; }
   if (storyOverlay && !storyOverlay.classList.contains("hidden")) { storyRespond(); return; }
   if (quizOverlay && !quizOverlay.classList.contains("hidden")) { if (quizAnswered) quizNext(); return; }
   if (state.scene === "hub" && state.nearby) {
@@ -1846,6 +1816,7 @@ function useMedbay() {
 
 function useRecycler() {
   closeModal();
+  synthMode = "recycler";
   if (synthOverlay) {
     synthOverlay.classList.remove("hidden");
     state.paused = true;
@@ -1853,70 +1824,14 @@ function useRecycler() {
     const title = document.getElementById("synthTitle");
     const hint = document.getElementById("synthHint");
     const crafting = document.getElementById("synthCrafting");
+    const resultImg = document.getElementById("synthResultImg");
     if (title) title.textContent = "精炼机";
-    if (hint) hint.textContent = "选择一类材料，按 Enter 或点击精炼：消耗 3 个同类碎片，炼成 1 枚回收章。";
-    if (crafting) crafting.textContent = "选择碎片类别后精炼";
+    if (hint) hint.textContent = "选择一类材料，点击精炼：消耗 3 个同类碎片，炼成 1 枚回收章。";
+    if (crafting) crafting.textContent = "选择碎片类别后点击精炼";
+    if (resultImg) resultImg.src = imagePaths.facilityRecycler || "";
   }
 }
 
-function showInventory() {
-  const stats = currentStats();
-  const equippedHtml = ["weapon", "helmet", "armor", "boots"]
-    .map((slot) => {
-      const item = getEquip(save.equipped[slot]);
-      return `<div class="slot-pill">${slotName(slot)}：${item ? item.name : "未装备"}</div>`;
-    })
-    .join("");
-  const cards = Object.values(themeConfigs)
-    .map((theme) => {
-      const items = equipments.filter((item) => (item.theme || "electronic") === theme.id);
-      return `
-        <section class="equip-theme-block">
-          <h3>${theme.name}</h3>
-          <div class="modal-grid">
-            ${items
-              .map((item) => {
-                const unlocked = save.unlocked.includes(item.id);
-                const equipped = save.equipped[item.slot] === item.id;
-                return `
-                  <article class="card ${unlocked ? "good" : "locked"}">
-                    <div class="card-title"><img src="${imagePaths[item.img]}" alt="" /><span>${item.name}</span></div>
-                    <p>${item.desc}</p>
-                    <div class="cost-row">${costHtml(item.cost) || '<span class="cost">基础装备</span>'}</div>
-                    <button class="${equipped ? "quiet" : "primary"}" data-action="${unlocked ? "equip" : "unlock"}" data-id="${item.id}">
-                      ${equipped ? "已穿戴" : unlocked ? "穿戴" : "解锁"}
-                    </button>
-                    ${equipped && item.slot !== "weapon" ? `<button class="quiet" data-action="unequip" data-slot="${item.slot}">脱下</button>` : ""}
-                  </article>`;
-              })
-              .join("")}
-          </div>
-        </section>`;
-    })
-    .join("");
-  showModal(
-    `
-    <div class="modal-header">
-      <div>
-        <h2>装备间</h2>
-        <p>独立穿戴界面。武器决定攻击方式：圆圈震荡、前方挥砍、追踪子弹或混合攻击。</p>
-      </div>
-      <button class="quiet" data-action="close">关闭 Esc</button>
-    </div>
-    <div class="equip-layout">
-      <aside class="equip-paperdoll">
-        ${paperdollHtml()}
-        <div class="slot-row">${equippedHtml}</div>
-        <p>当前：伤害 ${stats.damage} · 冷却 ${stats.cooldown.toFixed(2)}s · 移速 ${Math.round(stats.speed)} · 拾取 ${stats.pickup}</p>
-        <button class="primary" data-action="openSkills">技能训练 / 选择 Q 技能</button>
-      </aside>
-      <div class="equip-theme-list">${cards}</div>
-    </div>
-    <div class="modal-footer">快捷键：E 装备间 · K 技能训练 · Q 战斗技能。小怪碎片解锁装备与技能，Boss 碎片兑换 3D 打印实物。</div>
-  `,
-    "bgLab",
-  );
-}
 
 function paperdollHtml() {
   const weapon = getEquip(save.equipped.weapon);
@@ -1963,6 +1878,7 @@ function showSkills() {
 
 function showCraft() {
   closeModal();
+  synthMode = "craft";
   if (synthOverlay) {
     synthOverlay.classList.remove("hidden");
     state.paused = true;
@@ -1970,9 +1886,11 @@ function showCraft() {
     const title = document.getElementById("synthTitle");
     const hint = document.getElementById("synthHint");
     const crafting = document.getElementById("synthCrafting");
+    const resultImg = document.getElementById("synthResultImg");
     if (title) title.textContent = "纪念工坊";
     if (hint) hint.textContent = "选中一个配方，按 Enter 或点击合成启动合成台。";
     if (crafting) crafting.textContent = "选择配方后合成";
+    if (resultImg) resultImg.src = imagePaths.facilityWorkbench || "";
     return;
   }
 }
@@ -1981,10 +1899,12 @@ function closeSynth() {
   if (synthOverlay) synthOverlay.classList.add("hidden");
   state.paused = false;
   synthSelected = null;
+  synthMode = "craft";
 }
 
 let synthSelected = null;
 let synthAnimating = false;
+let synthMode = "craft";
 
 function renderSynthRecipes() {
   const list = document.getElementById("synthRecipes");
@@ -2044,7 +1964,30 @@ function doRecycle(id) {
   save.scraps.token = (save.scraps.token || 0) + 1;
   saveGame();
   renderRecyclerUI();
+  triggerRecyclerAnimation();
   toast("精炼成功：获得 1 枚回收章。");
+}
+
+function triggerRecyclerAnimation() {
+  const hammer = document.getElementById("anvilHammer");
+  const spark = document.getElementById("anvilSpark");
+  const crafting = document.getElementById("synthCrafting");
+  const bowl = document.getElementById("anvilBowl");
+  if (crafting) crafting.textContent = "精炼中...";
+  let strikes = 0;
+  const doStrike = () => {
+    if (hammer) hammer.classList.add("strike");
+    if (spark) { spark.classList.remove("active"); void spark.offsetWidth; spark.classList.add("active"); }
+    strikes++;
+    setTimeout(() => {
+      if (hammer) hammer.classList.remove("strike");
+      if (strikes < 3) setTimeout(doStrike, 200);
+      else {
+        if (crafting) crafting.textContent = "精炼完成！选择其他碎片继续精炼。";
+      }
+    }, 200);
+  };
+  doStrike();
 }
 
 
@@ -2183,95 +2126,8 @@ function showMissions() {
   `, "bgHub");
 }
 
-function showMuseum() {
-  const theme = currentTheme();
-  const cards = collectibleCards
-    .filter((item) => item.theme === theme.id)
-    .map((item) => `
-      <article class="collect-card">
-        <div class="collect-art"><img src="${imagePaths[item.img]}" alt="" /></div>
-        <div class="collect-copy">
-          <span class="rarity">${item.rarity}</span>
-          <h3>${item.name}</h3>
-          <p>${item.story.slice(0, 64)}...</p>
-          <button class="primary" data-action="openCollect" data-id="${item.id}">阅读故事</button>
-        </div>
-      </article>`)
-    .join("");
-  const monsters = theme.enemies
-    .slice(0, 8)
-    .map((enemy) => `
-      <article class="card">
-        <div class="card-title"><img src="${imagePaths[enemy.img]}" alt="" /><span>${enemy.name}</span></div>
-        <p>主题污染体。掉落：${enemy.drop.map(resourceName).join("、")}。小怪只掉碎片，buff 会在场地内刷新。</p>
-      </article>`)
-    .join("");
-  showModal(`
-    <div class="modal-header">
-      <div>
-        <h2>收藏展馆：${theme.name}</h2>
-        <p>这里展示当前主题的怪物图鉴与卡牌纪念品。每张卡牌都有废品自己的经历，适合做青少年公益课堂里的故事任务。</p>
-      </div>
-      <button class="quiet" data-action="close">关闭 Esc</button>
-    </div>
-    <h3>卡牌收藏</h3>
-    <div class="collect-grid">${cards}</div>
-    <h3>污染体图鉴</h3>
-    <div class="modal-grid">${monsters}</div>
-    <div class="modal-footer">在传送门切换主题后，展馆会切换到电子、塑料、纸板或布料卡牌。</div>
-  `, "bgMarket");
-}
 
-function showCollectibleStory(id) {
-  const item = collectibleCards.find((card) => card.id === id);
-  if (!item) return;
-  const theme = themeConfigs[item.theme] || currentTheme();
-  showModal(`
-    <div class="modal-header">
-      <div>
-        <h2>${item.name}</h2>
-        <p>${theme.name} · ${item.rarity}</p>
-      </div>
-      <button class="quiet" data-action="showMuseum">返回展馆</button>
-    </div>
-    <article class="story-card">
-      <div class="collect-art large"><img src="${imagePaths[item.img]}" alt="" /></div>
-      <p>${item.story}</p>
-    </article>
-    <div class="modal-footer">卡牌风收藏品用于讲述“它为什么不能乱丢、它还能变成什么”。</div>
-  `, "bgMarket");
-}
 
-function showStory() {
-  const theme = currentTheme();
-  const currentScenes = dialogueScenes
-    .filter((scene) => scene[0] === theme.name || scene[0] === "基地剧情")
-    .concat(dialogueScenes.filter((scene) => scene[0] !== theme.name && scene[0] !== "基地剧情"))
-    .slice(0, 50);
-  const cards = currentScenes
-    .map((scene, index) => `
-      <article class="dialog-card">
-        <img src="${imagePaths[index % 3 === 0 ? theme.preview : index % 3 === 1 ? "heroFront" : "facilityRecycler"]}" alt="" />
-        <div>
-          <strong>${String(index + 1).padStart(2, "0")} · ${scene[0]}</strong>
-          <p><b>废品：</b>${scene[1]}</p>
-          <p><b>我：</b>${scene[2]}</p>
-          <p><b>知识点：</b>${scene[3]}</p>
-        </div>
-      </article>`)
-    .join("");
-  showModal(`
-    <div class="modal-header">
-      <div>
-        <h2>剧情导览</h2>
-        <p>${GAME_NAME} 的剧情采用“我与废品对话”的形式。当前主题：${theme.name}；这里优先显示当前主题和基地剧情。</p>
-      </div>
-      <button class="quiet" data-action="close">关闭 Esc</button>
-    </div>
-    <div class="dialog-list">${cards}</div>
-    <div class="modal-footer">推荐路线：剧情导览 -> 传送门选主题 -> 小怪收集 -> 解密学习 -> 展馆读卡 -> Boss兑换。</div>
-  `, "bgHub");
-}
 
 function claimMission(id) {
   const map = {
@@ -2754,8 +2610,6 @@ function showModal(html, bgKey = "bgHub") {
   state.paused = true;
   toastEl.classList.add("hidden");
   modal.innerHTML = html;
-  const bg = imagePaths[bgKey] || imagePaths.bgHub;
-  modal.style.backgroundImage = `linear-gradient(135deg, rgba(247,255,238,0.97), rgba(222,255,240,0.94)), url("${bg}")`;
   modal.classList.remove("hidden");
 }
 
@@ -2840,7 +2694,7 @@ function drawPortalArrow() {
   const dx = state.battlePortal.x - player.x;
   const dy = state.battlePortal.y - player.y;
   const dist = Math.hypot(dx, dy);
-  if (dist < 200) return;
+  if (dist < 140) return;
   const angle = Math.atan2(dy, dx);
   const arrowX = player.x + Math.cos(angle) * 60;
   const arrowY = player.y - 50 + Math.sin(angle) * 40;
@@ -3078,8 +2932,22 @@ function drawPickup(p) {
 }
 
 function drawBattlePortal() {
+  const p = state.battlePortal;
   const idx = Math.floor(performance.now() / 120) % 8;
-  drawSprite(imgs[`portal${idx}`], state.battlePortal.x, state.battlePortal.y, 128, 128);
+  const pulse = Math.sin(performance.now() / 300) * 0.15 + 0.85;
+  ctx.save();
+  ctx.globalAlpha = 0.3 * pulse;
+  ctx.fillStyle = "#46d57a";
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 90, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  drawSprite(imgs[`portal${idx}`], p.x, p.y, 128, 128);
+  const d = distance(player, p);
+  if (d < 160) {
+    drawGameText("传送门 Enter", p.x - 50, p.y - 90, 16, "#46d57a", true);
+  }
 }
 
 function drawEnemy(enemy) {
@@ -3287,7 +3155,7 @@ function drawPlayer() {
   else if (dir.includes("down")) img = moving ? (step ? imgs.heroWalkFront1 : imgs.heroWalkFront2) : imgs.heroFront;
   else img = moving ? (step ? imgs.heroWalkRight1 : imgs.heroWalkRight2) : (imgs.heroIdleRight || imgs.heroWalkRight1);
   if (player.hurtCd > 0 && Math.floor(player.hurtCd * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-  const pw = 64, ph = 80;
+  const pw = 72, ph = 72;
   ctx.save();
   if (dir.includes("left")) { ctx.translate(player.x, player.y); ctx.scale(-1, 1); drawSprite(img, 0, 0, pw, ph); }
   else drawSprite(img, player.x, player.y, pw, ph);
@@ -3479,7 +3347,7 @@ function bindEvents() {
     if (key === "e" && state.scene !== "title") showInventory();
     if (key === "k" && state.scene !== "title") showSkills();
     if (key === "c" && state.scene !== "title") showCraft();
-    if (key === "enter" && synthOverlay && !synthOverlay.classList.contains("hidden")) doSynth();
+    if (key === "enter" && synthOverlay && !synthOverlay.classList.contains("hidden")) { if (synthMode === "craft") doSynth(); }
     if (key === "x" && state.scene !== "title") showExchange();
     if (key === "b" && state.scene !== "title") showBackgrounds();
     if (key === "m" && state.scene !== "title") showMissions();
