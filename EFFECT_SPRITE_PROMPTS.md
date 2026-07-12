@@ -4,7 +4,7 @@
 Each effect is a sprite sheet on a **pure #00ff00 chroma-key background** (flat solid green, no gradients, no shadows, no texture).
 The background will be removed programmatically. Do NOT use green anywhere in the effect itself.
 
-All sprites should be in a **cel-shaded / anime game style** matching Soul Knight (???*) and Survivor.io (??????) aesthetics:
+All sprites should be in a **cel-shaded / anime game style** matching Soul Knight (魂斗神) and Survivor.io (生存争颋) aesthetics:
 - Bold outlines, vibrant colors, clean shapes
 - Slight transparency on outer edges for glow blending
 - No realistic fire/water physics - stylized game art
